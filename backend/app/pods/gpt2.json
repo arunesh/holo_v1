@@ -1,0 +1,89 @@
+{
+  "id": "gpt2",
+  "title": "GPT-2: Inside a Transformer",
+  "topic": "transformers",
+  "description": "Fly through the GPT-2 architecture and watch a real forward pass — tokens, embeddings, attention, MLPs, and next-token predictions.",
+  "scene": {
+    "type": "transformer",
+    "params": {
+      "n_layers": 12,
+      "n_heads": 12,
+      "d_model": 768,
+      "d_mlp": 3072,
+      "vocab_size": 50257,
+      "context": 1024,
+      "model_name": "gpt2"
+    },
+    "default_input": "The cat sat on the"
+  },
+  "narration": [
+    {
+      "id": "intro",
+      "text": "Welcome to GPT-2. What looks like magic is really a pipeline: text becomes numbers, those numbers flow through a stack of identical blocks, and out comes a prediction for the next word.",
+      "commands": [{ "op": "reset", "args": {} }, { "op": "focusOn", "args": { "target": "overview" } }]
+    },
+    {
+      "id": "embeddings",
+      "text": "First, each token is turned into a vector — its embedding — and we add a position vector so the model knows word order. This is the start of the residual stream.",
+      "commands": [{ "op": "focusOn", "args": { "target": "embeddings" } }, { "op": "annotate", "args": { "text": "Tokens to 768-dimensional embeddings" } }]
+    },
+    {
+      "id": "run",
+      "text": "Let's feed in a real sentence and run the actual model. Watch the activations come alive.",
+      "commands": [{ "op": "runInference", "args": { "text": "The cat sat on the" } }, { "op": "focusOn", "args": { "target": "block", "index": 0 } }]
+    },
+    {
+      "id": "block0",
+      "text": "Here is the first transformer block. Every block does the same two things: attention, then a small neural network called an MLP.",
+      "commands": [{ "op": "focusOn", "args": { "target": "block", "index": 0 } }, { "op": "highlightBlock", "args": { "index": 0 } }]
+    },
+    {
+      "id": "attention",
+      "text": "Attention lets each token look at the others and pull in the information it needs. These arcs show how strongly each token attends to the ones before it.",
+      "commands": [{ "op": "focusOn", "args": { "target": "attention", "index": 0 } }, { "op": "showAttention", "args": { "block": 0 } }]
+    },
+    {
+      "id": "head",
+      "text": "GPT-2 has twelve attention heads per block, each learning a different relationship. Let's isolate a single head.",
+      "commands": [{ "op": "highlightHead", "args": { "block": 0, "head": 3 } }, { "op": "showAttention", "args": { "block": 0, "head": 3 } }]
+    },
+    {
+      "id": "mlp",
+      "text": "After attention, the MLP processes each token independently, transforming what attention gathered. Together they update the residual stream.",
+      "commands": [{ "op": "hideAttention", "args": {} }, { "op": "focusOn", "args": { "target": "mlp", "index": 0 } }]
+    },
+    {
+      "id": "activations",
+      "text": "We can read the actual numbers. Here are the residual activation magnitudes for each token at this layer — down to two decimal places.",
+      "commands": [{ "op": "setPrecision", "args": { "decimals": 2 } }, { "op": "showActivations", "args": { "index": 0, "mode": "values" } }]
+    },
+    {
+      "id": "deep",
+      "text": "These blocks repeat twelve times. As we go deeper, the representations become more abstract — from surface word features to meaning and grammar.",
+      "commands": [{ "op": "hideActivations", "args": {} }, { "op": "focusOn", "args": { "target": "block", "index": 6 } }, { "op": "showActivations", "args": { "index": 6, "mode": "color" } }]
+    },
+    {
+      "id": "output",
+      "text": "Finally the last vector is unembedded back into vocabulary space, giving a probability for every possible next token. Here are GPT-2's top guesses.",
+      "commands": [{ "op": "hideActivations", "args": {} }, { "op": "focusOn", "args": { "target": "unembed" } }]
+    },
+    {
+      "id": "outro",
+      "text": "That's the whole machine. Now it's yours — ask me to zoom into any block, isolate a head, show activation values, or run the model on your own text.",
+      "commands": [{ "op": "focusOn", "args": { "target": "overview" } }]
+    }
+  ],
+  "affordances": [
+    { "op": "focusOn", "description": "Move the camera to frame a part of the model.", "args": { "target": "overview|embeddings|block|attention|mlp|head|unembed|token", "index": "block index", "head": "head index", "tokenIndex": "token index" } },
+    { "op": "highlightBlock", "description": "Highlight a transformer block.", "args": { "index": "block index" } },
+    { "op": "highlightHead", "description": "Highlight and focus an attention head.", "args": { "block": "block index", "head": "head index" } },
+    { "op": "showAttention", "description": "Draw token-to-token attention arcs for a block; omit head to average.", "args": { "block": "block index", "head": "optional head index" } },
+    { "op": "hideAttention", "description": "Hide attention arcs.", "args": {} },
+    { "op": "showActivations", "description": "Heatmap residual activations; mode 'values' prints numbers.", "args": { "index": "block index", "mode": "color|values" } },
+    { "op": "hideActivations", "description": "Hide the activation heatmap.", "args": {} },
+    { "op": "setPrecision", "description": "Set decimal places for numeric values.", "args": { "decimals": "0-6" } },
+    { "op": "runInference", "description": "Run the real model on input text.", "args": { "text": "input text" } },
+    { "op": "annotate", "description": "Show a caption.", "args": { "text": "caption" } },
+    { "op": "reset", "description": "Reset to the overview.", "args": {} }
+  ]
+}
