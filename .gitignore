@@ -1,0 +1,16 @@
+# tooling & deps (installed by scripts/setup.sh)
+.tooling/
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
+
+# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# model / hf cache
+.cache/
