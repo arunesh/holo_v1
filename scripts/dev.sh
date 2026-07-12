@@ -3,7 +3,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-export PATH="$ROOT/.tooling/node/bin:$PATH"
+# Prefer the userspace Node from setup.sh; otherwise rely on a system node on PATH.
+[ -x "$ROOT/.tooling/node/bin/node" ] && export PATH="$ROOT/.tooling/node/bin:$PATH"
 
 cleanup() { kill 0 2>/dev/null || true; }
 trap cleanup EXIT INT TERM

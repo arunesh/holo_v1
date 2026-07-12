@@ -2,7 +2,7 @@
   "id": "transformers-tech-behind-llms",
   "title": "Transformers, the tech behind LLMs",
   "topic": "transformers",
-  "description": "A visual walkthrough of how transformer models turn text into predictions through embeddings, attention, and MLP layers.",
+  "description": "A visual walkthrough of how transformers turn text into predictions, from token embeddings through attention and MLP blocks to the final unembedding.",
   "scene": {
     "type": "transformer",
     "params": {
@@ -14,12 +14,12 @@
       "context": 1024,
       "model_name": "GPT-2"
     },
-    "default_input": "The cat sat on the"
+    "default_input": "The quick brown fox jumps over the lazy"
   },
   "narration": [
     {
-      "id": "intro",
-      "text": "Large language models like GPT are built on an architecture called the transformer. Let's open up the whole machine and see how text flows through it to predict the next word.",
+      "id": "intro-overview",
+      "text": "This is a transformer, the architecture behind large language models like GPT. At its heart, it is a machine that takes in text and predicts what word comes next.",
       "commands": [
         {
           "op": "reset",
@@ -34,14 +34,14 @@
         {
           "op": "annotate",
           "args": {
-            "text": "A transformer, end to end"
+            "text": "A transformer: text in, next-word prediction out"
           }
         }
       ]
     },
     {
-      "id": "embeddings",
-      "text": "It all starts at the input. Each token, roughly a word or piece of a word, becomes a long list of numbers called an embedding, a vector living in a high dimensional space.",
+      "id": "tokens-embeddings",
+      "text": "First the input text is broken into tokens, little chunks of words. Each token becomes a high-dimensional vector, an embedding that encodes its meaning as a point in space.",
       "commands": [
         {
           "op": "focusOn",
@@ -52,63 +52,14 @@
         {
           "op": "annotate",
           "args": {
-            "text": "Tokens become vectors"
+            "text": "Tokens become 768-dimensional vectors"
           }
         }
       ]
     },
     {
-      "id": "embedding-meaning",
-      "text": "Directions in this space carry meaning. Words with similar meanings sit near each other, and as the vector moves through the network it soaks up context from its neighbors.",
-      "commands": [
-        {
-          "op": "focusOn",
-          "args": {
-            "target": "token",
-            "tokenIndex": 1
-          }
-        },
-        {
-          "op": "annotate",
-          "args": {
-            "text": "Direction encodes meaning"
-          }
-        }
-      ]
-    },
-    {
-      "id": "blocks-overview",
-      "text": "These vectors then pass through a stack of identical blocks. GPT-2 has twelve of them, and each block has two main parts: an attention step and a multilayer perceptron.",
-      "commands": [
-        {
-          "op": "focusOn",
-          "args": {
-            "target": "overview"
-          }
-        },
-        {
-          "op": "highlightBlock",
-          "args": {
-            "index": 0
-          }
-        },
-        {
-          "op": "highlightBlock",
-          "args": {
-            "index": 1
-          }
-        },
-        {
-          "op": "annotate",
-          "args": {
-            "text": "A stack of 12 blocks"
-          }
-        }
-      ]
-    },
-    {
-      "id": "block-zoom",
-      "text": "Let's zoom into a single block. Information enters, gets refined, and is added back into what's called the residual stream, the running tally of each token's meaning.",
+      "id": "residual-stream",
+      "text": "These vectors flow forward through a stack of blocks. As they pass through, each vector gets nudged and enriched, soaking up context from its neighbors.",
       "commands": [
         {
           "op": "focusOn",
@@ -118,16 +69,23 @@
           }
         },
         {
-          "op": "annotate",
+          "op": "highlightBlock",
           "args": {
-            "text": "Inside one block"
+            "index": 0
+          }
+        },
+        {
+          "op": "showActivations",
+          "args": {
+            "index": 0,
+            "mode": "color"
           }
         }
       ]
     },
     {
       "id": "attention-intro",
-      "text": "The first stage is attention. This is where tokens look at each other and pass information around, so each word can update its meaning based on context.",
+      "text": "The defining piece is attention. Attention lets every token look at every other token and pull in the information it needs to refine its meaning.",
       "commands": [
         {
           "op": "focusOn",
@@ -137,23 +95,9 @@
           }
         },
         {
-          "op": "showAttention",
-          "args": {
-            "block": 0
-          }
+          "op": "hideActivations",
+          "args": {}
         },
-        {
-          "op": "annotate",
-          "args": {
-            "text": "Tokens talk to each other"
-          }
-        }
-      ]
-    },
-    {
-      "id": "attention-arcs",
-      "text": "Each arc shows how strongly one token attends to another. A word like sat might pull information from cat to figure out who is doing the sitting.",
-      "commands": [
         {
           "op": "showAttention",
           "args": {
@@ -163,15 +107,23 @@
         {
           "op": "annotate",
           "args": {
-            "text": "Attention weights as arcs"
+            "text": "Each token attends to the others"
           }
         }
       ]
     },
     {
-      "id": "heads",
-      "text": "Attention runs in parallel across many heads. GPT-2 has twelve per block, and each head can specialize, tracking grammar, references, or other relationships.",
+      "id": "multi-head",
+      "text": "Attention runs in parallel across many heads. Each head learns its own kind of relationship, like matching a word to its subject or tracking the topic.",
       "commands": [
+        {
+          "op": "focusOn",
+          "args": {
+            "target": "head",
+            "index": 0,
+            "head": 0
+          }
+        },
         {
           "op": "highlightHead",
           "args": {
@@ -189,14 +141,34 @@
         {
           "op": "annotate",
           "args": {
-            "text": "12 heads, each a specialist"
+            "text": "12 heads, 12 different relationships"
           }
         }
       ]
     },
     {
-      "id": "mlp",
-      "text": "After tokens have shared information, each vector passes through the multilayer perceptron. Here every token is processed independently, where much of the model's stored knowledge lives.",
+      "id": "another-head",
+      "text": "A different head focuses on a completely different pattern. Together the heads build a rich, multi-faceted picture of the context.",
+      "commands": [
+        {
+          "op": "highlightHead",
+          "args": {
+            "block": 0,
+            "head": 3
+          }
+        },
+        {
+          "op": "showAttention",
+          "args": {
+            "block": 0,
+            "head": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "mlp-block",
+      "text": "After attention, each vector passes through a multi-layer perceptron. This is where much of the model's stored knowledge lives, applied to each token independently.",
       "commands": [
         {
           "op": "hideAttention",
@@ -212,14 +184,14 @@
         {
           "op": "annotate",
           "args": {
-            "text": "MLP: stored knowledge"
+            "text": "The MLP stores learned facts"
           }
         }
       ]
     },
     {
-      "id": "stacking",
-      "text": "This pattern repeats, attention then MLP, block after block. With each layer the representations grow richer, building up an increasingly contextual picture of the text.",
+      "id": "stacking-blocks",
+      "text": "This pattern, attention then MLP, repeats block after block. With each layer the representations grow more abstract and more capable.",
       "commands": [
         {
           "op": "focusOn",
@@ -234,51 +206,57 @@
           }
         },
         {
-          "op": "showActivations",
-          "args": {
-            "index": 5,
-            "mode": "color"
-          }
-        },
-        {
           "op": "annotate",
           "args": {
-            "text": "Refining layer by layer"
+            "text": "12 blocks stacked in sequence"
           }
         }
       ]
     },
     {
-      "id": "inference",
-      "text": "Let's actually run it. We feed in the phrase the cat sat on the, and watch the activations and attention light up as the model processes it.",
+      "id": "deep-attention",
+      "text": "Look at attention deeper in the network. By now the heads can attend across long ranges, capturing meaning that spans the whole sentence.",
       "commands": [
         {
-          "op": "hideActivations",
+          "op": "focusOn",
+          "args": {
+            "target": "attention",
+            "index": 8
+          }
+        },
+        {
+          "op": "showAttention",
+          "args": {
+            "block": 8
+          }
+        }
+      ]
+    },
+    {
+      "id": "unembedding",
+      "text": "At the very end, the final token's vector is projected back out to a score for every possible next token. That is the unembedding step.",
+      "commands": [
+        {
+          "op": "hideAttention",
           "args": {}
         },
         {
           "op": "focusOn",
           "args": {
-            "target": "overview"
-          }
-        },
-        {
-          "op": "runInference",
-          "args": {
-            "text": "The cat sat on the"
+            "target": "unembed"
           }
         },
         {
           "op": "annotate",
           "args": {
-            "text": "Forward pass in action"
+            "text": "Vector to scores over the vocabulary"
           }
         }
       ]
     },
     {
-      "id": "unembed",
-      "text": "At the very end, the final token's vector is mapped to a score for every possible next token. A softmax turns those scores into probabilities.",
+      "id": "softmax-prediction",
+      "text": "A softmax turns those scores into probabilities. The model picks a likely next token, appends it, and repeats the whole process to generate text.",
       "commands": [
         {
           "op": "focusOn",
@@ -295,37 +273,59 @@
         {
           "op": "annotate",
           "args": {
-            "text": "Vector to probabilities"
+            "text": "Softmax: scores become probabilities"
           }
         }
       ]
     },
     {
-      "id": "prediction",
-      "text": "The model predicts mat as a likely continuation. By sampling a token, appending it, and running again, the transformer generates text one word at a time.",
+      "id": "run-inference",
+      "text": "Let's feed the model a real sentence and watch it light up. Given this prompt, the activations flow and the model predicts the next word.",
       "commands": [
         {
           "op": "focusOn",
           "args": {
-            "target": "unembed"
+            "target": "overview"
+          }
+        },
+        {
+          "op": "runInference",
+          "args": {
+            "text": "The quick brown fox jumps over the lazy"
           }
         },
         {
           "op": "annotate",
           "args": {
-            "text": "...on the mat"
+            "text": "Forward pass on a real prompt"
           }
         }
       ]
     },
     {
-      "id": "wrap",
-      "text": "So a transformer is really just embeddings flowing through repeated attention and MLP layers, gradually transforming meaning until it can guess what comes next. That simple recipe, scaled up enormously, is what powers modern language models.",
+      "id": "see-activations",
+      "text": "Here are the actual activations at an early block during that run, the numbers the model is really computing as it reads the prompt.",
       "commands": [
         {
-          "op": "hideAttention",
-          "args": {}
+          "op": "focusOn",
+          "args": {
+            "target": "block",
+            "index": 2
+          }
         },
+        {
+          "op": "showActivations",
+          "args": {
+            "index": 2,
+            "mode": "values"
+          }
+        }
+      ]
+    },
+    {
+      "id": "wrapup",
+      "text": "So a transformer is just embeddings, attention, and MLPs repeated many times, ending in a prediction. Scale this up with billions of parameters and you get the language models reshaping our world.",
+      "commands": [
         {
           "op": "hideActivations",
           "args": {}
@@ -343,7 +343,7 @@
         {
           "op": "annotate",
           "args": {
-            "text": "Attention plus MLP, scaled up"
+            "text": "Embeddings + attention + MLPs, scaled up"
           }
         }
       ]
