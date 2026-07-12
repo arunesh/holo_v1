@@ -18,8 +18,8 @@ scripts/   setup.sh (userspace install), dev.sh (run both servers)
 ```bash
 cp .env.example .env   # add ANTHROPIC_API_KEY (and ELEVENLABS_API_KEY if you have one)
 ./scripts/setup.sh     # uses your node/python3 if present, else installs Node in .tooling
-./scripts/dev.sh       # backend :8000, frontend :5173
-# open http://localhost:5173
+./scripts/dev.sh       # backend :8000, frontend :8350 (set HOLODECK_FRONTEND_PORT to override)
+# open http://localhost:8350
 ```
 
 `setup.sh` is cross-platform: on macOS it uses your existing `node`/`python3` (or Homebrew),

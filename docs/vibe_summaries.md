@@ -1,3 +1,21 @@
+● Default confirmed at 8350. Let me verify the override separately.
+
+● Bash(cd /home/azureuser/holodeck/holo_v1/frontend; export PATH="$(cd ../.tooling/node/bin && pwd):$PATH"; HOLODECK_FRONTEND_PORT=9999 npm run dev > /tmp/vite2.log 2>&1 & P=$!; sleep 7; grep -iE "Local:"
+      /tmp/vite2.log | head; kill $P 2>/dev/null; true)
+  ⎿    ➜  Local:   http://localhost:9999/
+  ⎿  Allowed by auto mode classifier
+
+● Both verified. The frontend port is now configurable and defaults to 8350.
+
+  Changes:
+  - frontend/vite.config.ts — reads HOLODECK_FRONTEND_PORT (defaults to 8350) instead of the hardcoded 5173.
+  - scripts/dev.sh — exports HOLODECK_FRONTEND_PORT (default 8350) so vite picks it up, and the startup log now prints the actual port.
+  - HOLODECK.md — quickstart updated to 8350 and notes the override env var.
+
+  Verified end-to-end: Vite serves on http://localhost:8350/ by default and on 9999 when HOLODECK_FRONTEND_PORT=9999 is set. The backend stays on :8000 and the proxy is unchanged, so API/WS calls still route
+  correctly. (Historical transcript files under docs/ still mention :5173 — I left those as-is since they're records of past sessions.)
+
+------------------------------------------------------------------------------------------------------------------------
 ● Holodeck is built and verified end-to-end. The backend is running at http://localhost:8000 (serving the built frontend); for live dev use ./scripts/dev.sh (Vite on :5173).
   
   What was built — all 6 phases
