@@ -16,6 +16,35 @@
   correctly. (Historical transcript files under docs/ still mention :5173 — I left those as-is since they're records of past sessions.)
 
 ------------------------------------------------------------------------------------------------------------------------
+● Done. Both requests are implemented and verified.
+
+  1. Local transcript fetcher → scripts/fetch_transcript.py
+
+  A self-contained script (only needs pip3 install yt-dlp) you run on your MacBook/residential IP. It outputs exactly the JSON shape Holodeck's /api/generate accepts: {title, description, transcript, video_id}.
+
+  # fetch with your browser cookies (beats the bot-wall):
+  python3 scripts/fetch_transcript.py "https://youtu.be/wjZofJX0v4M" \
+          --cookies-from-browser chrome -o backend/app/transcripts/transformers.json
+
+  # one-shot: fetch locally AND generate the pod on a running server:
+  python3 scripts/fetch_transcript.py URL --cookies-from-browser chrome --post http://localhost:8000
+
+  To make it integrate, I extended the backend: POST /api/generate now accepts either {youtube_url} (server fetches) or {title, transcript, video_id} (your offline fetch). I verified both paths live — the transcript-driven pod
+  genuinely reflected the supplied text ("attention… lets each token look at every other token"), and the JSON file POST round-trips. The fetcher supports --cookies-from-browser, --cookies file, -o file, and --post.
+
+  2. macOS install/run
+
+  scripts/setup.sh is now cross-platform (no separate mac script needed):
+  - Uses your existing node/python3 if present (Homebrew), else downloads the correct Node tarball (darwin-arm64/darwin-x64/linux-*).
+  - Picks the right torch wheel per-OS — default PyPI on macOS (Apple-Silicon MPS / Intel), CPU index on Linux.
+  - Skips the Linux-only --without-pip+get-pip bootstrap when your python has working pip.
+  - dev.sh falls back to system Node when .tooling/node is absent.
+
+  Both verified: bash -n clean, fetch_transcript.py compiles, all 6 backend tests still pass, catalogue is back to the two real pods (flagship GPT-2 + the README transformer video). I removed the throwaway test pod I'd generated.
+
+  One caveat I couldn't fully exercise here: this datacenter box has no yt-dlp on system python and YouTube bot-walls it, so I tested the real-transcript path with a supplied transcript rather than a live YouTube pull. On your
+  MacBook with cookies, the live pull is what --cookies-from-browser is for — that's the piece to confirm on your end (rg #2). Docs for the whole flow are in HOLODECK.md.
+------------------------------------------------------------------------------------------------------------------------
 ● Holodeck is built and verified end-to-end. The backend is running at http://localhost:8000 (serving the built frontend); for live dev use ./scripts/dev.sh (Vite on :5173).
   
   What was built — all 6 phases
