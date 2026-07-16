@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holodeck — Step inside the video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#05060a;
+    --signal:#7ea0ff;
+    --pulse:#5dd39e;
+    --ember:#ffb35c;
+    --ink:#e9edf8;
+    --dim:rgba(233,237,248,.6);
+    --faint:rgba(233,237,248,.34);
+    --line:rgba(126,160,255,.16);
+    --card:rgba(126,160,255,.05);
+    --display:"Space Grotesk",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,monospace;
+    --body:system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--void);
+    color:var(--ink);
+    font-family:var(--body);
+    overflow:hidden;
+  }
+
+  /* ---------- deck ---------- */
+  .deck{position:fixed;inset:0 0 64px 0}
+  .slide{
+    position:absolute;inset:0;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:min(7vh,72px) min(8vw,110px);
+    opacity:0;visibility:hidden;
+    transform:translateY(14px);
+    transition:opacity .5s ease,transform .5s ease,visibility 0s .5s;
+  }
+  .slide.on{
+    opacity:1;visibility:visible;transform:none;
+    transition:opacity .5s ease,transform .5s ease,visibility 0s;
+  }
+
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.22em;
+    color:var(--signal);text-transform:uppercase;margin-bottom:26px;
+  }
+  .eyebrow .tick{color:var(--faint)}
+  h1,h2{font-family:var(--display);font-weight:700;letter-spacing:-.02em;text-wrap:balance}
+  h1{font-size:clamp(44px,7.2vw,104px);line-height:1.02}
+  h2{font-size:clamp(30px,4.2vw,56px);line-height:1.06;margin-bottom:18px}
+  .lede{font-size:clamp(16px,1.55vw,21px);line-height:1.55;color:var(--dim);max-width:58ch}
+  .accent-s{color:var(--signal)} .accent-p{color:var(--pulse)} .accent-e{color:var(--ember)}
+
+  /* ---------- slide 1 ---------- */
+  #s1{z-index:1}
+  #stars{position:absolute;inset:0;width:100%;height:100%;z-index:-1}
+  #s1 h1{max-width:12ch;margin-bottom:28px}
+  #s1 .lede{max-width:52ch}
+  .hint{
+    margin-top:52px;font-family:var(--mono);font-size:12px;
+    letter-spacing:.14em;color:var(--faint);
+  }
+  .hint kbd{
+    font-family:inherit;border:1px solid var(--line);border-radius:5px;
+    padding:2px 7px;color:var(--dim);
+  }
+
+  /* ---------- slide 2 : two drivers ---------- */
+  .drivers{
+    display:grid;grid-template-columns:1fr 1fr;gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:14px;
+    overflow:hidden;margin:34px 0 26px;max-width:940px;
+  }
+  .driver{background:var(--void);padding:26px 28px}
+  .driver .tag{
+    font-family:var(--mono);font-size:12px;letter-spacing:.2em;margin-bottom:12px;
+  }
+  .driver:first-child .tag{color:var(--signal)}
+  .driver:last-child .tag{color:var(--pulse)}
+  .driver p{color:var(--dim);line-height:1.55;font-size:15.5px}
+  .drivers-caption{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.06em;
+    color:var(--faint);max-width:940px;text-align:center;margin-bottom:30px;
+  }
+  .proof{
+    display:flex;align-items:center;gap:14px;max-width:940px;
+    border:1px solid rgba(93,211,158,.28);border-radius:12px;
+    background:rgba(93,211,158,.05);padding:16px 22px;
+    font-size:15px;line-height:1.5;color:var(--dim);
+  }
+  .live-dot{
+    flex:none;width:9px;height:9px;border-radius:50%;
+    background:var(--pulse);box-shadow:0 0 12px var(--pulse);
+    animation:blink 1.8s ease-in-out infinite;
+  }
+  @keyframes blink{50%{opacity:.35}}
+  .proof strong{color:var(--pulse);font-weight:600}
+  .proof a{color:var(--pulse)}
+
+  /* ---------- slide 3 : open problems ---------- */
+  .problems{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:22px;
+    margin-top:36px;
+  }
+  .problem{
+    border:1px solid var(--line);border-radius:14px;background:var(--card);
+    padding:26px 24px 28px;display:flex;flex-direction:column;gap:14px;
+    border-top:2px solid var(--edge);
+  }
+  .problem .tag{font-family:var(--mono);font-size:12px;letter-spacing:.24em;color:var(--edge)}
+  .problem h3{font-family:var(--display);font-weight:700;font-size:clamp(18px,1.7vw,23px);line-height:1.2}
+  .problem p{color:var(--dim);font-size:15px;line-height:1.55}
+  .problem em{font-style:normal;color:var(--ink)}
+  .p-format{--edge:var(--signal)} .p-player{--edge:var(--pulse)} .p-grammar{--edge:var(--ember)}
+
+  /* ---------- slide 4 : market session tiles ---------- */
+  .tiles{display:flex;flex-direction:column;gap:16px;margin-top:34px;max-width:1020px}
+  .tile{
+    display:grid;grid-template-columns:210px 1fr;gap:26px;align-items:baseline;
+    border:1px solid var(--line);border-left:3px solid var(--edge);
+    border-radius:12px;background:var(--card);padding:22px 28px;
+  }
+  .tile .tag{
+    font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:var(--edge);
+    display:flex;align-items:center;gap:9px;
+  }
+  .tile h3{font-family:var(--display);font-weight:700;font-size:clamp(17px,1.6vw,22px);margin-bottom:6px}
+  .tile p{color:var(--dim);font-size:15px;line-height:1.55;max-width:66ch}
+  .t-edu{--edge:var(--pulse)} .t-create{--edge:var(--signal)} .t-story{--edge:var(--ember)}
+
+  /* ---------- slide 5 : now / next ---------- */
+  .nownext{
+    display:grid;grid-template-columns:1fr 1fr;gap:22px;
+    margin:36px 0 44px;max-width:1020px;
+  }
+  .col{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:26px 28px}
+  .col .tag{font-family:var(--mono);font-size:12px;letter-spacing:.24em;margin-bottom:16px}
+  .col-now .tag{color:var(--pulse)} .col-next .tag{color:var(--signal)}
+  .col ul{list-style:none;display:flex;flex-direction:column;gap:12px}
+  .col li{
+    color:var(--dim);font-size:15px;line-height:1.5;padding-left:20px;position:relative;
+  }
+  .col li::before{content:"";position:absolute;left:0;top:.62em;width:8px;height:2px}
+  .col-now li::before{background:var(--pulse)} .col-next li::before{background:var(--signal)}
+  .col li strong{color:var(--ink);font-weight:600}
+  .close{
+    font-family:var(--display);font-weight:700;letter-spacing:-.015em;
+    font-size:clamp(24px,3vw,40px);max-width:24ch;
+  }
+  .close .accent-s{color:var(--signal)}
+
+  /* ---------- scrubber (signature) ---------- */
+  .scrub{
+    position:fixed;left:0;right:0;bottom:0;height:64px;z-index:10;
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:26px;
+    padding:0 min(8vw,110px);
+    border-top:1px solid var(--line);
+    background:rgba(5,6,10,.85);backdrop-filter:blur(8px);
+  }
+  .timecode,.beat-label{
+    font-family:var(--mono);font-size:12px;letter-spacing:.14em;color:var(--faint);
+    white-space:nowrap;
+  }
+  .timecode b{color:var(--signal);font-weight:500}
+  .track{position:relative;height:100%;cursor:pointer}
+  .rail{
+    position:absolute;left:0;right:0;top:50%;height:2px;
+    background:var(--line);transform:translateY(-50%);
+  }
+  .fill{
+    position:absolute;left:0;top:50%;height:2px;transform:translateY(-50%);
+    background:var(--signal);box-shadow:0 0 10px rgba(126,160,255,.7);
+    transition:width .5s ease;
+  }
+  .mark{
+    position:absolute;top:50%;width:7px;height:7px;
+    transform:translate(-50%,-50%) rotate(45deg);
+    background:var(--void);border:1px solid var(--faint);
+    cursor:pointer;transition:border-color .3s,background .3s;
+  }
+  .mark.done{background:var(--signal);border-color:var(--signal)}
+  .mark:hover{border-color:var(--ink)}
+  .playhead{
+    position:absolute;top:50%;width:11px;height:11px;border-radius:50%;
+    transform:translate(-50%,-50%);
+    background:var(--signal);box-shadow:0 0 14px var(--signal);
+    transition:left .5s ease;pointer-events:none;
+    animation:breathe 2.4s ease-in-out infinite;
+  }
+  @keyframes breathe{50%{box-shadow:0 0 4px var(--signal)}}
+  .mark:focus-visible{outline:2px solid var(--signal);outline-offset:3px}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:860px){
+    .slide{padding:9vh 6vw;overflow-y:auto;justify-content:flex-start}
+    .drivers,.problems,.nownext{grid-template-columns:1fr}
+    .tile{grid-template-columns:1fr;gap:10px}
+    .scrub{padding:0 6vw;gap:16px}
+    .beat-label{display:none}
+  }
+
+  /* ---------- motion & print ---------- */
+  @media (prefers-reduced-motion:reduce){
+    .slide,.fill,.playhead{transition:none}
+    .live-dot,.playhead{animation:none}
+  }
+  @media print{
+    body{overflow:visible;background:var(--void)}
+    .deck{position:static}
+    .slide{
+      position:relative;inset:auto;opacity:1;visibility:visible;transform:none;
+      min-height:100vh;page-break-after:always;
+    }
+    .scrub,.hint{display:none}
+  }
+</style>
+</head>
+<body>
+
+<main class="deck" aria-roledescription="presentation">
+
+  <!-- BEAT 01 · COLD OPEN -->
+  <section class="slide on" id="s1" data-beat="COLD OPEN" role="group" aria-roledescription="slide" aria-label="1 of 5">
+    <canvas id="stars" aria-hidden="true"></canvas>
+    <p class="eyebrow">Holodeck <span class="tick">·</span> 2026</p>
+    <h1>Step inside <span class="accent-s">the video.</span></h1>
+    <p class="lede">The world learns, imagines, and remembers through video — and video is
+    still a one-way stream. Holodeck turns it into a place: pause it, question it,
+    change it, move through it.</p>
+    <p class="hint"><kbd>→</kbd> to advance &nbsp;·&nbsp; <kbd>P</kbd> to print</p>
+  </section>
+
+  <!-- BEAT 02 · THE SHIFT -->
+  <section class="slide" id="s2" data-beat="THE SHIFT" role="group" aria-roledescription="slide" aria-label="2 of 5">
+    <p class="eyebrow">The shift</p>
+    <h2>From watching to inhabiting</h2>
+    <p class="lede">A video stops being a strip of frames. It becomes a live scene,
+    a story told over it, and a vocabulary of things that can happen.</p>
+    <div class="drivers">
+      <div class="driver">
+        <p class="tag">▶ WATCH</p>
+        <p>The authored narration plays its beats over the scene, like any film —
+        camera moves, highlights, and voiceover, in order.</p>
+      </div>
+      <div class="driver">
+        <p class="tag">⦿ ASK</p>
+        <p>Your voice goes to a model that drives the <em>same scene</em> with the
+        <em>same commands</em> — go anywhere, ask anything, mid-story.</p>
+      </div>
+    </div>
+    <p class="drivers-caption">ONE SCENE · TWO DRIVERS · ONE ENGINE — watching and asking are the same act</p>
+    <div class="proof">
+      <span class="live-dot"></span>
+      <span><strong>Live today:</strong> a transformer explainer you can fly through —
+      real GPT-2 forward passes, attention arcs you can grab, activations to the decimal.
+      <a href="https://myholodeck.app">myholodeck.app</a></span>
+    </div>
+  </section>
+
+  <!-- BEAT 03 · TECHNICAL WORK -->
+  <section class="slide" id="s3" data-beat="TECHNICAL WORK" role="group" aria-roledescription="slide" aria-label="3 of 5">
+    <p class="eyebrow">Technical work <span class="tick">·</span> open by design</p>
+    <h2>Three problems, built in the open</h2>
+    <div class="problems">
+      <div class="problem p-format">
+        <p class="tag">FORMAT</p>
+        <h3>An open encoding for interactive video</h3>
+        <p>What mp4 did for pixels, done for worlds: one portable file carrying the
+        scene, the narration, and the semantics of what can happen.
+        <em>Our v1 ships today as pods</em> — a parameterized scene, narration beats,
+        and a library of named actions.</p>
+      </div>
+      <div class="problem p-player">
+        <p class="tag">PLAYER</p>
+        <h3>A player that is a model</h3>
+        <p>Tomorrow's player doesn't decode frames — it understands them. A
+        vision-language model holds the scene, renders whatever you ask to see, and
+        <em>answers as the video</em>, including moments no author ever filmed.</p>
+      </div>
+      <div class="problem p-grammar">
+        <p class="tag">INTERACTION</p>
+        <h3>A grammar for talking to video</h3>
+        <p>Pause and ask. Zoom past the frame. Change a parameter and watch the story
+        recompute. Branch the plot. <em>The remote control becomes a conversation.</em></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- BEAT 04 · MARKETS -->
+  <section class="slide" id="s4" data-beat="MARKETS" role="group" aria-roledescription="slide" aria-label="4 of 5">
+    <p class="eyebrow">Markets</p>
+    <h2>Where inhabited video wins first</h2>
+    <div class="tiles">
+      <div class="tile t-edu">
+        <p class="tag"><span class="live-dot"></span>EDUCATION</p>
+        <div>
+          <h3>Every explainer becomes a lab</h3>
+          <p>The lecture you watch is the system you interrogate — one scene answers
+          both. A decade of YouTube back-catalog is the content library; our pipeline
+          already turns a URL into an interactive pod.</p>
+        </div>
+      </div>
+      <div class="tile t-create">
+        <p class="tag">CREATIVE EXPRESSION</p>
+        <div>
+          <h3>Creators ship worlds, not renders</h3>
+          <p>An authored scene holds every camera path a viewer will ever want.
+          An open format makes remixing a right, not a hack.</p>
+        </div>
+      </div>
+      <div class="tile t-story">
+        <p class="tag">CROWD-SOURCED STORYTELLING</p>
+        <div>
+          <h3>Stories that fork</h3>
+          <p>Viewers don't just watch the plot — they branch it. Communities
+          co-author persistent worlds; canon becomes a graph, not a strip.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BEAT 05 · NOW / NEXT -->
+  <section class="slide" id="s5" data-beat="NOW / NEXT" role="group" aria-roledescription="slide" aria-label="5 of 5">
+    <p class="eyebrow">Now <span class="tick">/</span> next</p>
+    <h2>Live now. Open next.</h2>
+    <div class="nownext">
+      <div class="col col-now">
+        <p class="tag">RUNNING TODAY</p>
+        <ul>
+          <li><strong>myholodeck.app</strong> — a GPT-2 transformer you can fly through and talk to</li>
+          <li><strong>Real internals</strong> — live forward passes, per-head attention, exact activations</li>
+          <li><strong>Voice in, voice out</strong> — an AI tutor drives the scene as it speaks</li>
+          <li><strong>YouTube → pod</strong> — a URL becomes an interactive scene</li>
+        </ul>
+      </div>
+      <div class="col col-next">
+        <p class="tag">BUILDING NEXT</p>
+        <ul>
+          <li><strong>Publish the pod spec</strong> — an open standard for interactive video</li>
+          <li><strong>Prototype the VLM player</strong> — the model as the playback engine</li>
+          <li><strong>Open authoring</strong> — creators, classrooms, and communities make pods</li>
+        </ul>
+      </div>
+    </div>
+    <p class="close">The holodeck was never a screen.<br><span class="accent-s">Neither is this.</span></p>
+  </section>
+
+</main>
+
+<!-- signature: video-player scrubber as navigation -->
+<footer class="scrub" aria-label="Deck navigation">
+  <p class="timecode"><b id="tc-now">00:01</b> / 00:05</p>
+  <div class="track" id="track">
+    <div class="rail"></div>
+    <div class="fill" id="fill"></div>
+    <button class="mark" data-i="0" aria-label="Beat 1: Cold open"></button>
+    <button class="mark" data-i="1" aria-label="Beat 2: The shift"></button>
+    <button class="mark" data-i="2" aria-label="Beat 3: Technical work"></button>
+    <button class="mark" data-i="3" aria-label="Beat 4: Markets"></button>
+    <button class="mark" data-i="4" aria-label="Beat 5: Now and next"></button>
+    <div class="playhead" id="playhead"></div>
+  </div>
+  <p class="beat-label" id="beat-label">BEAT 01 · COLD OPEN</p>
+</footer>
+
+<script>
+(() => {
+  const slides = [...document.querySelectorAll('.slide')];
+  const marks  = [...document.querySelectorAll('.mark')];
+  const fill = document.getElementById('fill');
+  const playhead = document.getElementById('playhead');
+  const tcNow = document.getElementById('tc-now');
+  const beatLabel = document.getElementById('beat-label');
+  const N = slides.length;
+  let cur = 0;
+
+  // marker positions along the track (%), first at 2%, last at 98%
+  const pos = i => 2 + (96 * i / (N - 1));
+  marks.forEach((m, i) => { m.style.left = pos(i) + '%'; });
+
+  function go(i) {
+    cur = Math.max(0, Math.min(N - 1, i));
+    slides.forEach((s, k) => s.classList.toggle('on', k === cur));
+    marks.forEach((m, k) => m.classList.toggle('done', k <= cur));
+    fill.style.width = pos(cur) + '%';
+    playhead.style.left = pos(cur) + '%';
+    tcNow.textContent = '00:0' + (cur + 1);
+    beatLabel.textContent = 'BEAT 0' + (cur + 1) + ' · ' + slides[cur].dataset.beat;
+  }
+
+  addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); go(cur + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); go(cur - 1); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(N - 1);
+    else if (e.key.toLowerCase() === 'p' && !e.metaKey && !e.ctrlKey) window.print();
+  });
+  marks.forEach(m => m.addEventListener('click', () => go(+m.dataset.i)));
+  document.getElementById('track').addEventListener('click', e => {
+    if (e.target.classList.contains('mark')) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    go(Math.round(((e.clientX - r.left) / r.width) * (N - 1)));
+  });
+  let x0 = null;
+  addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, {passive: true});
+  addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 48) go(cur + (dx < 0 ? 1 : -1));
+  }, {passive: true});
+  go(0);
+
+  /* ---- constellation (slide 1) — echoes the product's login animation ---- */
+  const cv = document.getElementById('stars');
+  const ctx = cv.getContext('2d');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let nodes = [], edges = [], pulses = [], W = 0, H = 0;
+
+  function build() {
+    W = cv.width = cv.clientWidth * devicePixelRatio;
+    H = cv.height = cv.clientHeight * devicePixelRatio;
+    nodes = []; edges = []; pulses = [];
+    const n = Math.round((cv.clientWidth * cv.clientHeight) / 26000);
+    // seeded PRNG so the layout is stable per load
+    let seed = 42;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < n; i++) nodes.push({ x: rnd() * W, y: rnd() * H, r: (0.8 + rnd() * 1.6) * devicePixelRatio });
+    for (let i = 0; i < n; i++) {
+      const d = nodes.map((b, j) => ({ j, d: Math.hypot(nodes[i].x - b.x, nodes[i].y - b.y) }))
+        .filter(o => o.j !== i).sort((a, b) => a.d - b.d).slice(0, 2);
+      d.forEach(o => { if (i < o.j) edges.push([i, o.j]); });
+    }
+  }
+
+  function frame(t) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.lineWidth = devicePixelRatio * 0.6;
+    ctx.strokeStyle = 'rgba(126,160,255,0.10)';
+    edges.forEach(([a, b]) => {
+      ctx.beginPath(); ctx.moveTo(nodes[a].x, nodes[a].y); ctx.lineTo(nodes[b].x, nodes[b].y); ctx.stroke();
+    });
+    nodes.forEach(nd => {
+      ctx.beginPath(); ctx.arc(nd.x, nd.y, nd.r, 0, 7);
+      ctx.fillStyle = 'rgba(126,160,255,0.35)'; ctx.fill();
+    });
+    if (!reduced) {
+      if (pulses.length < 3 && Math.sin(t / 400) > 0.995) {
+        const e = edges[Math.floor((t / 7) % edges.length)];
+        if (e) pulses.push({ e, p: 0 });
+      }
+      pulses = pulses.filter(pl => (pl.p += 0.012) < 1);
+      pulses.forEach(pl => {
+        const [a, b] = pl.e;
+        const x = nodes[a].x + (nodes[b].x - nodes[a].x) * pl.p;
+        const y = nodes[a].y + (nodes[b].y - nodes[a].y) * pl.p;
+        ctx.beginPath(); ctx.arc(x, y, 2.2 * devicePixelRatio, 0, 7);
+        ctx.fillStyle = 'rgba(93,211,158,0.9)';
+        ctx.shadowColor = '#5dd39e'; ctx.shadowBlur = 14; ctx.fill(); ctx.shadowBlur = 0;
+      });
+      requestAnimationFrame(frame);
+    }
+  }
+  build(); requestAnimationFrame(frame);
+  addEventListener('resize', () => { build(); if (reduced) requestAnimationFrame(frame); });
+})();
+</script>
+</body>
+</html>

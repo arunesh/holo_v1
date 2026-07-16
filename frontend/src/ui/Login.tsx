@@ -41,15 +41,17 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
   return (
     <div className="login">
       <NeuralCanvas firePulse={firePulse} />
-      <main className="login-card">
+      <header className="login-header">
         <div className="login-eyebrow">HOLODECK</div>
         <h1>
           Step <em>inside</em> the video.
         </h1>
-        <p className="login-sub">
+        <p className="login-about">
           Holodeck turns a video into a place. Fly through the ideas while they play, ask
           questions out loud, and steer where it goes.
         </p>
+      </header>
+      <main className="login-card">
         <button
           className="session-tile"
           onClick={onEnterSession}

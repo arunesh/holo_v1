@@ -19,7 +19,7 @@
     - http://localhost:4173 (if you ever use vite preview)
     - your real domain later, e.g. https://holodeck.example.com
   - You do not need any redirect URI — the app uses Google Identity Services' token popup flow, which only checks origins.
-  - Create → copy the Client ID (looks like 1234567890-abc123.apps.googleusercontent.com). You don't need the client secret; this is a browser-only flow.
+  - Create → copy the Client ID. You don't need the client secret; this is a browser-only flow.
 
   4. Give it to the app
   echo 'VITE_GOOGLE_CLIENT_ID=<your-client-id>' > /home/azureuser/holodeck/holo_v1/frontend/.env.local

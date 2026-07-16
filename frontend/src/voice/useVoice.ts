@@ -11,31 +11,42 @@ export function useVoice() {
   const chunks = useRef<Blob[]>([])
   const audioEl = useRef<HTMLAudioElement | null>(null)
   const recognition = useRef<any>(null)
+  // Playback outlives React: the Audio element is detached and speechSynthesis is
+  // global, so on unmount (e.g. sign-out) we must silence both and refuse new speech.
+  const disposed = useRef(false)
 
   useEffect(() => {
+    disposed.current = false
     fetchVoiceStatus().then(setServerVoice)
     audioEl.current = new Audio()
+    return () => {
+      disposed.current = true
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+      audioEl.current?.pause()
+      if (mediaRecorder.current?.state === 'recording') mediaRecorder.current.stop()
+      recognition.current?.stop?.()
+    }
   }, [])
 
   // --- speak: resolves once playback has finished (true if anything was spoken) ---
   const speak = useCallback(
     async (text: string): Promise<boolean> => {
-      if (!text) return false
+      if (!text || disposed.current) return false
       if (serverVoice.tts) {
         const url = await synthesizeSpeech(text)
         const el = audioEl.current
-        if (url && el) {
+        if (url && el && !disposed.current) {
           el.src = url
           const finished = waitForAudioEnd(el, text)
           try {
             await el.play()
             return await finished
           } catch {
-            return browserSpeak(text)
+            return disposed.current ? false : browserSpeak(text)
           }
         }
       }
-      return browserSpeak(text)
+      return disposed.current ? false : browserSpeak(text)
     },
     [serverVoice.tts],
   )

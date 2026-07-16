@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { usePodStore } from '../state/podStore'
 import { runCommands, sleep } from '../engine/affordances'
 
@@ -7,6 +7,17 @@ import { runCommands, sleep } from '../engine/affordances'
 // to finish before the next.
 export function useNarration(speak: (t: string) => Promise<boolean>, stopSpeaking: () => void) {
   const cancelled = useRef(false)
+
+  // The playback loop is a free-running async function; unmounting (e.g. sign-out)
+  // doesn't stop it on its own, so cancel it and silence any current speech.
+  useEffect(
+    () => () => {
+      cancelled.current = true
+      stopSpeaking()
+      usePodStore.getState().setPlaying(false)
+    },
+    [stopSpeaking],
+  )
 
   const playFrom = useCallback(
     async (startIndex: number) => {
