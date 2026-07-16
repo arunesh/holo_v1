@@ -3,8 +3,9 @@ import { usePodStore } from '../state/podStore'
 import { runCommands, sleep } from '../engine/affordances'
 
 // Drives the authored narration track ("watch like a video"): for each beat it
-// runs the beat's affordance commands, speaks the text, and waits before the next.
-export function useNarration(speak: (t: string) => void) {
+// runs the beat's affordance commands, speaks the text, and waits for the speech
+// to finish before the next.
+export function useNarration(speak: (t: string) => Promise<boolean>, stopSpeaking: () => void) {
   const cancelled = useRef(false)
 
   const playFrom = useCallback(
@@ -21,13 +22,19 @@ export function useNarration(speak: (t: string) => void) {
         store.setBeatIndex(i)
         store.patch({ captions: beat.text })
         await runCommands(beat.commands, 300)
-        speak(beat.text)
-        // pace roughly to spoken length
-        const dwell = Math.max(2200, beat.text.length * 55)
-        const step = 100
-        for (let t = 0; t < dwell; t += step) {
-          if (cancelled.current) break
-          await sleep(step)
+        const spoke = await speak(beat.text)
+        if (cancelled.current) break
+        if (spoke) {
+          // brief breath between beats
+          await sleep(400)
+        } else {
+          // no TTS available — pace roughly to reading length instead
+          const dwell = Math.max(2200, beat.text.length * 55)
+          const step = 100
+          for (let t = 0; t < dwell; t += step) {
+            if (cancelled.current) break
+            await sleep(step)
+          }
         }
       }
       if (!cancelled.current) usePodStore.getState().setBeatIndex(pod.narration.length - 1)
@@ -43,16 +50,18 @@ export function useNarration(speak: (t: string) => void) {
 
   const pause = useCallback(() => {
     cancelled.current = true
+    stopSpeaking()
     usePodStore.getState().setPlaying(false)
-  }, [])
+  }, [stopSpeaking])
 
   const restart = useCallback(() => {
     cancelled.current = true
+    stopSpeaking()
     const s = usePodStore.getState()
     s.reset()
     s.setBeatIndex(-1)
     setTimeout(() => playFrom(0), 50)
-  }, [playFrom])
+  }, [playFrom, stopSpeaking])
 
   const step = useCallback(async () => {
     const s = usePodStore.getState()

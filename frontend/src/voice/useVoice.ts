@@ -17,22 +17,33 @@ export function useVoice() {
     audioEl.current = new Audio()
   }, [])
 
-  // --- speak ---
+  // --- speak: resolves once playback has finished (true if anything was spoken) ---
   const speak = useCallback(
-    async (text: string) => {
-      if (!text) return
+    async (text: string): Promise<boolean> => {
+      if (!text) return false
       if (serverVoice.tts) {
         const url = await synthesizeSpeech(text)
-        if (url && audioEl.current) {
-          audioEl.current.src = url
-          await audioEl.current.play().catch(() => browserSpeak(text))
-          return
+        const el = audioEl.current
+        if (url && el) {
+          el.src = url
+          const finished = waitForAudioEnd(el, text)
+          try {
+            await el.play()
+            return await finished
+          } catch {
+            return browserSpeak(text)
+          }
         }
       }
-      browserSpeak(text)
+      return browserSpeak(text)
     },
     [serverVoice.tts],
   )
+
+  const stopSpeaking = useCallback(() => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+    if (audioEl.current && !audioEl.current.paused) audioEl.current.pause()
+  }, [])
 
   // --- listen (returns a transcript) ---
   const listen = useCallback(async (): Promise<string> => {
@@ -72,16 +83,51 @@ export function useVoice() {
     }
   }, [])
 
-  return { speak, listen, stop, recording, serverVoice }
+  return { speak, stopSpeaking, listen, stop, recording, serverVoice }
 }
 
-function browserSpeak(text: string) {
-  if (!('speechSynthesis' in window)) return
-  const u = new SpeechSynthesisUtterance(text)
-  u.rate = 1.02
-  u.pitch = 1.0
-  window.speechSynthesis.cancel()
-  window.speechSynthesis.speak(u)
+// Generous upper bound on how long speaking `text` could take, so a stalled
+// utterance or audio element can never wedge callers awaiting completion.
+function speechCapMs(text: string) {
+  return 4000 + text.length * 120
+}
+
+function waitForAudioEnd(el: HTMLAudioElement, text: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const settle = (spoke: boolean) => {
+      window.clearTimeout(cap)
+      el.removeEventListener('ended', onDone)
+      el.removeEventListener('pause', onDone)
+      el.removeEventListener('error', onError)
+      resolve(spoke)
+    }
+    const onDone = () => settle(true)
+    const onError = () => settle(false)
+    const cap = window.setTimeout(onDone, speechCapMs(text))
+    el.addEventListener('ended', onDone)
+    el.addEventListener('pause', onDone)
+    el.addEventListener('error', onError)
+  })
+}
+
+function browserSpeak(text: string): Promise<boolean> {
+  if (!('speechSynthesis' in window)) return Promise.resolve(false)
+  return new Promise((resolve) => {
+    const u = new SpeechSynthesisUtterance(text)
+    u.rate = 1.02
+    u.pitch = 1.0
+    const cap = window.setTimeout(() => resolve(true), speechCapMs(text))
+    u.onend = () => {
+      window.clearTimeout(cap)
+      resolve(true)
+    }
+    u.onerror = () => {
+      window.clearTimeout(cap)
+      resolve(false)
+    }
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(u)
+  })
 }
 
 function browserListen(

@@ -1,3 +1,17 @@
+
+  The hooks error is a hot-reload artifact, not a bug. My TTS fix added a new useCallback (stopSpeaking) inside useVoice. Vite's hot module replacement swapped the new code into your already-running
+  page, so the mounted App component suddenly rendered with one more hook than its previous render — exactly what the error says ("hook #36: useRef → useCallback", "Rendered more hooks than during the
+  previous render"). React's rules-of-hooks checker can't tell "the code was edited live" apart from "the code conditionally calls hooks", so it throws. I verified all hooks in App.tsx, useVoice, and
+  useNarration are unconditional, and the production build compiles cleanly. After a full page reload, the old and new renders come from the same code and the error can't recur.
+  
+  The 404 was the missing favicon. The page has no public/ directory or icon link, so the browser's automatic /favicon.ico request 404'd — harmless, but noisy. I added an inline SVG favicon to index.html
+  to silence it.
+
+  After the hard refresh, you should be on the new code with a clean console — that's also when you'll get the TTS-completion behavior, so long sentences should play to the end before the next beat
+  starts.
+
+
+------------------------------------------------------------------------------------------------------------------------
 ● Default confirmed at 8350. Let me verify the override separately.
 
 ● Bash(cd /home/azureuser/holodeck/holo_v1/frontend; export PATH="$(cd ../.tooling/node/bin && pwd):$PATH"; HOLODECK_FRONTEND_PORT=9999 npm run dev > /tmp/vite2.log 2>&1 & P=$!; sleep 7; grep -iE "Local:"

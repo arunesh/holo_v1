@@ -8,8 +8,10 @@ import ValueInspector from './ui/ValueInspector'
 import { useVoice } from './voice/useVoice'
 import { useSession } from './ai/useSession'
 import { useNarration } from './ui/useNarration'
+import { MicIcon, SendIcon } from './ui/icons'
+import type { SessionUser } from './auth/session'
 
-export default function App() {
+export default function App({ user, onSignOut }: { user: SessionUser; onSignOut: () => void }) {
   const pods = usePodStore((s) => s.pods)
   const pod = usePodStore((s) => s.pod)
   const playing = usePodStore((s) => s.playing)
@@ -19,9 +21,9 @@ export default function App() {
 
   const [query, setQuery] = useState('')
 
-  const { speak, listen, stop, recording, serverVoice } = useVoice()
+  const { speak, stopSpeaking, listen, stop, recording, serverVoice } = useVoice()
   const { ask } = useSession(pod?.id ?? null, speak)
-  const { play, pause, restart, step } = useNarration(speak)
+  const { play, pause, restart, step } = useNarration(speak, stopSpeaking)
 
   // Load catalogue, then auto-open the first pod.
   useEffect(() => {
@@ -91,6 +93,17 @@ export default function App() {
               </button>
             ))}
           </div>
+          <div className="user-row">
+            {user.picture ? (
+              <img className="avatar" src={user.picture} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <span className="avatar avatar-fallback">{user.name[0]?.toUpperCase()}</span>
+            )}
+            <span className="user-name">{user.name}</span>
+            <button className="linklike" onClick={onSignOut}>
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
 
@@ -128,14 +141,16 @@ export default function App() {
             onKeyDown={(e) => e.key === 'Enter' && onAsk(query)}
           />
           <button
-            className={`mic ${recording ? 'recording' : ''}`}
-            title="Hold to speak"
+            className={`icon-btn mic ${recording ? 'recording' : ''}`}
+            title={recording ? 'Stop recording' : 'Ask by voice'}
+            aria-label={recording ? 'Stop recording' : 'Ask by voice'}
             onClick={onMic}
           >
-            🎙
+            <MicIcon />
           </button>
-          <button className="primary" onClick={() => onAsk(query)}>
+          <button className="ask-btn" onClick={() => onAsk(query)}>
             Ask
+            <SendIcon />
           </button>
         </div>
       </div>

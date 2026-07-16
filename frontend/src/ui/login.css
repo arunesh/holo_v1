@@ -1,0 +1,232 @@
+/* ---- Login: the gate into the holodeck ---- */
+
+.login {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(1100px 700px at 28% 45%, #0b1122 0%, var(--void) 62%);
+}
+
+.login-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.login-card {
+  position: absolute;
+  top: 50%;
+  left: clamp(20px, 7vw, 130px);
+  transform: translateY(-50%);
+  width: min(410px, calc(100vw - 40px));
+  padding: 38px 36px 28px;
+  background: rgba(10, 14, 26, 0.78);
+  border: 1px solid rgba(126, 160, 255, 0.25);
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  animation: card-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(calc(-50% + 14px)); }
+  to   { opacity: 1; transform: translateY(-50%); }
+}
+
+.login-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.42em;
+  color: var(--signal);
+}
+.login-eyebrow::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(126, 160, 255, 0.5), transparent);
+}
+
+.login-card h1 {
+  margin: 18px 0 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: clamp(28px, 3.4vw, 36px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.login-card h1 em {
+  font-style: normal;
+  color: var(--pulse);
+}
+
+.login-sub {
+  margin: 0 0 28px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--dim);
+}
+
+.g-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 48px;
+  border-radius: 24px;
+  cursor: pointer;
+  background: #f4f6fb;
+  color: #1a1e28;
+  border: 1px solid #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  transition: box-shadow 0.18s, transform 0.12s;
+}
+.g-btn:hover {
+  box-shadow: 0 0 0 4px rgba(126, 160, 255, 0.22), 0 6px 24px rgba(126, 160, 255, 0.18);
+}
+.g-btn:active { transform: scale(0.985); }
+.g-btn:disabled { opacity: 0.6; cursor: default; }
+
+.login-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: rgba(230, 233, 240, 0.35);
+}
+.login-or::before,
+.login-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(126, 160, 255, 0.18);
+}
+
+/* ---- featured interactive session tile ---- */
+.session-tile {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  padding: 18px 20px 16px;
+  border-radius: 14px;
+  background: linear-gradient(160deg, rgba(93, 211, 158, 0.08), rgba(126, 160, 255, 0.06));
+  border: 1px solid rgba(93, 211, 158, 0.35);
+  color: var(--ink);
+  font-family: inherit;
+  transition: border-color 0.18s, box-shadow 0.18s, transform 0.12s;
+}
+.session-tile:hover {
+  border-color: rgba(93, 211, 158, 0.7);
+  box-shadow: 0 0 0 3px rgba(93, 211, 158, 0.12), 0 8px 30px rgba(93, 211, 158, 0.15);
+  transform: translateY(-1px);
+}
+.session-tile:active { transform: translateY(0); }
+.session-tile:disabled { opacity: 0.6; cursor: default; }
+
+.session-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--pulse);
+}
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--pulse);
+  box-shadow: 0 0 8px rgba(93, 211, 158, 0.9);
+  animation: live-throb 2.2s ease-in-out infinite;
+}
+@keyframes live-throb {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.session-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+}
+.session-arrow {
+  color: var(--pulse);
+  transition: transform 0.18s;
+}
+.session-tile:hover .session-arrow { transform: translateX(4px); }
+
+.session-desc {
+  display: block;
+  margin-top: 7px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--dim);
+}
+
+.session-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(126, 160, 255, 0.14);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(230, 233, 240, 0.45);
+}
+
+.more-sessions {
+  margin: 10px 2px 0;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  color: rgba(230, 233, 240, 0.35);
+}
+
+.login-note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ember);
+}
+.login-err { color: #ff9d9d; }
+
+.login .g-btn:focus-visible,
+.login .session-tile:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
+}
+
+@media (max-width: 720px) {
+  .login-card {
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes card-in {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-card { animation: none; }
+  .live-dot { animation: none; }
+}
