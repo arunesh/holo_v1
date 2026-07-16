@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holodeck — Brand Sheet</title>
+<link rel="icon" href="favicon/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B1020; --ink:#101534; --panel:#131A33; --line:rgba(139,92,246,.18);
+    --cyan:#22D3EE; --blue:#2E7CF6; --violet:#8B5CF6; --fuchsia:#D946EF; --pink:#F472B6;
+    --dim:#8E97C4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--navy);color:#EEF0FF;
+       font-family:Poppins,system-ui,-apple-system,sans-serif;font-weight:300;
+       background-image:radial-gradient(120% 80% at 50% -10%,#1B1445 0%,#0D1130 55%,#0B1020 100%);
+       background-attachment:fixed}
+  .wrap{max-width:1080px;margin:0 auto;padding:64px 28px 96px}
+  h1{font-weight:500;font-size:30px;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--dim);font-size:14px;margin:0 0 56px;line-height:1.6}
+  h2{font-weight:500;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+     color:var(--violet);margin:56px 0 18px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+  .note{color:var(--dim);font-size:13px;line-height:1.7;margin:0 0 18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:32px;
+        display:flex;align-items:center;justify-content:center;min-height:150px}
+  .card.lightbg{background:#fff;border-color:#E4E7F2}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:760px){.g2,.g4{grid-template-columns:1fr}}
+  .cap{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:10px 2px 0}
+  img{max-width:100%;display:block}
+
+  /* browser tab mock */
+  .tabbar{background:#20232E;border-radius:12px 12px 0 0;padding:9px 9px 0;display:flex;gap:6px}
+  .tab{display:flex;align-items:center;gap:8px;background:#2E3240;padding:9px 16px;
+       border-radius:9px 9px 0 0;font-size:12.5px;color:#D8DBE8;font-weight:400}
+  .tab.off{background:transparent;color:#767B8C}
+  .tab img{width:16px;height:16px;border-radius:3px}
+  .viewport{background:#fff;height:66px;border-radius:0 0 12px 12px}
+
+  /* favicon pixel strip */
+  .px{display:flex;align-items:flex-end;gap:26px;flex-wrap:wrap;justify-content:center}
+  .px figure{margin:0;text-align:center}
+  .px img{image-rendering:auto;border-radius:4px;margin:0 auto}
+
+  /* swatches */
+  .sw{border-radius:14px;padding:16px;height:104px;display:flex;flex-direction:column;
+      justify-content:flex-end;border:1px solid rgba(255,255,255,.08)}
+  .sw b{font-weight:500;font-size:13px}
+  .sw code{font-size:11px;opacity:.72;font-family:ui-monospace,monospace}
+  .ramp{height:56px;border-radius:12px;margin-top:8px;
+        background:linear-gradient(90deg,#67E8F9,#22D3EE,#2E7CF6,#6366F1,#8B5CF6,#D946EF,#F472B6)}
+
+  /* nav mock */
+  .nav{display:flex;align-items:center;justify-content:space-between;
+       padding:16px 24px;border:1px solid var(--line);border-radius:14px;background:rgba(11,16,32,.7)}
+  .nav .links{display:flex;gap:26px;font-size:13px;color:var(--dim);font-weight:400}
+  .btn{background:linear-gradient(96deg,#22D3EE,#8B5CF6);color:#080C1A;font-weight:500;
+       font-size:13px;padding:8px 18px;border-radius:9px}
+  pre{background:#0A0E1E;border:1px solid var(--line);border-radius:12px;padding:18px;
+      overflow:auto;font-size:12px;line-height:1.65;color:#B9C2EE;
+      font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .tag{color:#7DD3FC}.at{color:#C4B5FD}.st{color:#FBBF24}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Holodeck — logo system</h1>
+  <p class="sub">Three concentric arcs (45° → 52.5° → 60°, each overlapping its predecessor by 45%) cascading around a luminous core. Cool cyan at the outer shell resolves to hot magenta at the emitter — a holosphere mid-projection.</p>
+
+  <h2>Primary mark</h2>
+  <div class="grid g2">
+    <div>
+      <div class="card"><img src="png/holodeck-mark-512.png" width="190" alt="Holodeck mark"></div>
+      <p class="cap">On dark — primary</p>
+    </div>
+    <div>
+      <div class="card lightbg"><img src="png/holodeck-mark-512.png" width="190" alt="Holodeck mark on light"></div>
+      <p class="cap">On light</p>
+    </div>
+  </div>
+
+  <h2>Horizontal lockup</h2>
+  <div class="grid g2">
+    <div>
+      <div class="card"><img src="svg/holodeck-lockup-dark.svg" width="340" alt="Holodeck horizontal lockup, dark"></div>
+      <p class="cap">Dark backgrounds</p>
+    </div>
+    <div>
+      <div class="card lightbg"><img src="svg/holodeck-lockup-light.svg" width="340" alt="Holodeck horizontal lockup, light"></div>
+      <p class="cap">Light backgrounds</p>
+    </div>
+  </div>
+
+  <h2>Stacked lockup</h2>
+  <div class="grid g2">
+    <div>
+      <div class="card" style="min-height:230px"><img src="svg/holodeck-stacked-dark.svg" width="170" alt="Holodeck stacked lockup, dark"></div>
+      <p class="cap">Dark backgrounds</p>
+    </div>
+    <div>
+      <div class="card lightbg" style="min-height:230px"><img src="svg/holodeck-stacked-light.svg" width="170" alt="Holodeck stacked lockup, light"></div>
+      <p class="cap">Light backgrounds</p>
+    </div>
+  </div>
+
+  <h2>Single colour</h2>
+  <p class="note">For embroidery, laser etch, watermarks, and anywhere the gradient can't survive.</p>
+  <div class="grid g2">
+    <div>
+      <div class="card"><img src="svg/holodeck-mark-mono-white.svg" width="130" alt="Mono white mark"></div>
+      <p class="cap">White knockout</p>
+    </div>
+    <div>
+      <div class="card lightbg"><img src="svg/holodeck-mark-mono-navy.svg" width="130" alt="Mono navy mark"></div>
+      <p class="cap">Navy #0B1020</p>
+    </div>
+  </div>
+
+  <h2>Favicon — true pixel sizes</h2>
+  <p class="note">Redrawn for small sizes: heavier strokes, no tail taper, larger core, 10% tile padding. Nothing below 16px depends on a hairline.</p>
+  <div class="card">
+    <div class="px">
+      <figure><img src="favicon/favicon-16x16.png" width="16" height="16" alt="16px"><figcaption class="cap">16</figcaption></figure>
+      <figure><img src="favicon/favicon-32x32.png" width="32" height="32" alt="32px"><figcaption class="cap">32</figcaption></figure>
+      <figure><img src="favicon/favicon-48x48.png" width="48" height="48" alt="48px"><figcaption class="cap">48</figcaption></figure>
+      <figure><img src="favicon/favicon-64x64.png" width="64" height="64" alt="64px"><figcaption class="cap">64</figcaption></figure>
+      <figure><img src="favicon/apple-touch-icon.png" width="120" height="120" alt="apple touch icon"><figcaption class="cap">180 · apple</figcaption></figure>
+    </div>
+  </div>
+
+  <h2>In a browser tab</h2>
+  <div>
+    <div class="tabbar">
+      <div class="tab"><img src="favicon/favicon-32x32.png" alt="">Holodeck</div>
+      <div class="tab off">Dashboard</div>
+      <div class="tab off">Docs</div>
+    </div>
+    <div class="viewport"></div>
+  </div>
+
+  <h2>In a site header</h2>
+  <div style="margin-top:16px">
+    <div class="nav">
+      <img src="svg/holodeck-lockup-dark.svg" height="30" alt="Holodeck">
+      <div class="links"><span>Product</span><span>Scenes</span><span>Docs</span><span>Pricing</span></div>
+      <div class="btn">Enter deck</div>
+    </div>
+  </div>
+
+  <h2>Palette</h2>
+  <div class="grid g4">
+    <div><div class="sw" style="background:#0B1020"><b>Void</b><code>#0B1020</code></div></div>
+    <div><div class="sw" style="background:#22D3EE;color:#062028"><b>Beam cyan</b><code>#22D3EE</code></div></div>
+    <div><div class="sw" style="background:#8B5CF6"><b>Field violet</b><code>#8B5CF6</code></div></div>
+    <div><div class="sw" style="background:#F472B6;color:#3A0B22"><b>Core pink</b><code>#F472B6</code></div></div>
+  </div>
+  <div class="ramp"></div>
+  <p class="cap">Holosphere ramp — outer shell → emitter core</p>
+
+  <h2>Type</h2>
+  <p class="note">Poppins. Medium (500) for the wordmark and headings, Light (300) for body. Geometric, circular, a near-perfect echo of the mark's arc curvature — the <em>o</em>'s bowl and the inner arc share a radius.</p>
+  <div class="card" style="flex-direction:column;align-items:flex-start;gap:14px">
+    <div style="font-weight:500;font-size:40px;letter-spacing:-.02em">Holodeck</div>
+    <div style="font-weight:300;font-size:15px;color:var(--dim);line-height:1.7">
+      Poppins Light 300 — body copy, long-form, captions.<br>
+      <span style="font-weight:400">Poppins Regular 400 — UI labels and nav.</span><br>
+      <span style="font-weight:500">Poppins Medium 500 — headings and the wordmark.</span>
+    </div>
+  </div>
+
+  <h2>Drop-in HTML</h2>
+<pre>&lt;<span class="tag">link</span> <span class="at">rel</span>=<span class="st">"icon"</span> <span class="at">href</span>=<span class="st">"/favicon.ico"</span> <span class="at">sizes</span>=<span class="st">"any"</span>&gt;
+&lt;<span class="tag">link</span> <span class="at">rel</span>=<span class="st">"icon"</span> <span class="at">href</span>=<span class="st">"/favicon.svg"</span> <span class="at">type</span>=<span class="st">"image/svg+xml"</span>&gt;
+&lt;<span class="tag">link</span> <span class="at">rel</span>=<span class="st">"apple-touch-icon"</span> <span class="at">href</span>=<span class="st">"/apple-touch-icon.png"</span>&gt;
+&lt;<span class="tag">link</span> <span class="at">rel</span>=<span class="st">"manifest"</span> <span class="at">href</span>=<span class="st">"/site.webmanifest"</span>&gt;
+&lt;<span class="tag">meta</span> <span class="at">name</span>=<span class="st">"theme-color"</span> <span class="at">content</span>=<span class="st">"#0B1020"</span>&gt;
+&lt;<span class="tag">meta</span> <span class="at">property</span>=<span class="st">"og:image"</span> <span class="at">content</span>=<span class="st">"/holodeck-og-card.png"</span>&gt;</pre>
+
+  <h2>Social card — 1200 × 630</h2>
+  <div class="card" style="padding:18px"><img src="png/holodeck-og-card.png" alt="Holodeck open graph card"></div>
+
+  <h2>Clear space & minimum size</h2>
+  <p class="note">Keep clear space equal to the core diameter on all sides of the lockup. Minimum widths: horizontal lockup 120px, stacked lockup 84px, mark alone 20px. Below that, use the favicon drawing instead — its strokes are tuned for it.</p>
+
+</div>
+</body>
+</html>
