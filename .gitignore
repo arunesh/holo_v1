@@ -4,8 +4,12 @@ backend/.venv/
 frontend/node_modules/
 frontend/dist/
 
-# secrets
-.env
+# secrets — cover .env.local, .env.development, etc., not just .env
+.env*
+!.env.example
+
+# macOS
+.DS_Store
 
 # python
 __pycache__/
