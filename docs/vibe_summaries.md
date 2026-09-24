@@ -1,3 +1,92 @@
+⏺ The bug is in how the Declarative Attention lesson's voice player detects the end of the ElevenLabs audio. I've fixed it locally and added tests, but haven't committed or deployed anything yet.
+
+  What happens: when an audio clip plays to the end, the browser fires a pause event just before ended. playAudio in frontend/src/lessons/declarative-attention/voicePlayback.ts treated pause as "playback failed". So
+  after ElevenLabs finished each sentence, speak() (in useLessonVoice.ts) fell back to browser speech and read it again. That's why you heard ElevenLabs first, then the browser voice. The GPT-2 lesson isn't affected
+  because its voice code treats pause as finished.
+
+  The fix: browser speech now takes over only if the ElevenLabs audio never started. Once it has played at all, a pause, error or timeout counts as spoken, so nothing is repeated. Skipping or interrupting still cancels
+  without repeating, as before.
+
+  Tests: I added two to test-lesson-experience.mjs:
+  - Audio that plays to the end counts as spoken. This one fails without the fix and passes with it.
+  - Audio that fails before starting still falls back to browser speech.
+
+  All 26 frontend tests and tsc pass. I haven't tested it in a real browser.
+
+  Git state:
+  - The fix is uncommitted on main, next to the uncommitted README rewrite.
+  - docs/vibe_summaries.md also shows as modified. I didn't touch it, so I assume it's your edit and have left it alone.
+
+  Should I commit the fix (and the README) to a branch and open a PR, or commit straight to main? Once it's merged, deploying on botmc is:
+  cd ~/holodeck/holo_v1 && git pull --ff-only && export PATH="$HOME/.local/node/bin:$PATH" && ./scripts/prod.sh
+  I can run that over ssh when you're ready.
+------------------------------------------------------------------------------------------------------------------------
+⏺ I rewrote README.md but haven't committed it. It now covers:
+
+  - a public description of the project and its three lessons
+  - an architecture diagram and the "one command vocabulary, two drivers" design
+  - install steps, a table of settings, and optional Google sign-in
+  - pod generation, the API, tests, and a generic deploy section
+
+  I scanned the new README for IPs, hostnames, usernames, domains and keys and found none. For deploying it gives only generic pm2 and reverse-proxy steps.
+
+  Want me to commit it on a branch and open a PR, or commit straight to main?
+
+  Prod details already in the public repo
+
+  arunesh/holo_v1 is public, and these tracked files already expose production details:
+
+  ┌────────────────────────────────────────────────────────────────────────────────────┬─────────────────────────────────────────────────────────────┐
+  │                                        File                                        │                       What it exposes                       │
+  ├────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
+  │ docs/gcp_connect.md                                                                │ The VM's public IP, the azureuser login, and an SSH command │
+  ├────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
+  │ frontend/.env.local                                                                │ The production Google OAuth client ID                       │
+  ├────────────────────────────────────────────────────────────────────────────────────┼─────────────────────────────────────────────────────────────┤
+  │ docs/holo_transcript_1.md, docs/vibe_summaries.md, docs/clever-spinning-adleman.md │ Server paths and username (old session transcripts)         │
+  └────────────────────────────────────────────────────────────────────────────────────┴─────────────────────────────────────────────────────────────┘
+
+  Deleting these files only removes them from future commits; they stay in the git history. The OAuth client ID is visible in the browser anyway, so it's low risk. The IP plus username is the main concern: make sure the
+  VM only accepts SSH keys (password login off) and that its firewall only allows traffic from Cloudflare.
+
+  I can remove these files from the repo if you want. Before I untrack frontend/.env.local, back it up on the server. Otherwise the next git pull there deletes it, and Google sign-in breaks after the rebuild.
+
+  Pushing to prod
+
+  The server runs the app under pm2 on port 8350, with nginx and Cloudflare in front. From your laptop:
+
+  ssh azureuser@<your-vm>
+  cd ~/holodeck/holo_v1
+
+  git log --oneline -1          # note the current commit, for rollback
+  git pull --ff-only origin main
+
+  Next, install dependencies, but only if they changed since the commit you noted:
+
+  git diff --stat <old-sha> HEAD -- backend/requirements.txt frontend/package-lock.json
+  # if requirements.txt changed:
+  backend/.venv/bin/pip install -r backend/requirements.txt
+  # if package-lock.json changed (prod.sh only runs npm ci when node_modules is missing):
+  (cd frontend && npm ci)
+
+  Then build the frontend and restart the app:
+
+  ./scripts/prod.sh
+
+  Check that it came up:
+
+  pm2 ls
+  curl -s localhost:8350/api/health     # {"ok":true}
+  pm2 logs holodeck --lines 50
+
+  Then open the site and try the Declarative Attention lesson.
+
+  For this deploy, PR #1 added only a test script to package.json, with no new dependencies. So git pull followed by ./scripts/prod.sh should be enough.
+
+  To roll back: git checkout <old-sha> && ./scripts/prod.sh, then git checkout main once it's fixed.
+
+  When you're ready, I'll start on review findings 5–10, plus adding jsonschema to requirements.txt and fixing the spatial test's missing playwright dependency.
+------------------------------------------------------------------------------------------------------------------------
 ⏺ I fixed findings 1–4 and pushed the commit to PR #1 as 0395fd0. Note that the PR comes from the contributor's fork (JhonSummer/holo_v1), so the commit is on their branch through maintainer edits. It will show up in
   the PR for them to see.
 

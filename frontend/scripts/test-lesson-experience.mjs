@@ -293,3 +293,30 @@ test('canceling audio stops playback and removes its source', async () => {
   assert.equal(pauses, 1)
   assert.equal(removed, true)
 })
+const fakeAudio = () => {
+  const handlers = {}
+  return {
+    handlers,
+    currentTime: 0,
+    src: '',
+    play: async () => {},
+    pause: () => {},
+    removeAttribute: () => {},
+    addEventListener: (name, fn) => (handlers[name] = fn),
+    removeEventListener: (name) => delete handlers[name],
+  }
+}
+test('audio that plays to the end counts as spoken despite the pause before ended', async () => {
+  const element = fakeAudio()
+  const promise = voice.playAudio(element, 'blob:test', 'hello', new AbortController().signal)
+  element.currentTime = 1.2
+  element.handlers.pause()
+  element.handlers.ended?.()
+  assert.equal(await promise, true)
+})
+test('audio that fails before starting reports unspoken so browser speech can take over', async () => {
+  const element = fakeAudio()
+  const promise = voice.playAudio(element, 'blob:test', 'hello', new AbortController().signal)
+  element.handlers.error()
+  assert.equal(await promise, false)
+})

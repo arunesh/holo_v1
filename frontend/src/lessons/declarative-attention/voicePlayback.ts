@@ -23,10 +23,13 @@ export function playAudio(
     }
     const ended = () => finish(true)
     const cancel = () => finish(false)
-    const timeout = setTimeout(cancel, speechCapMs(text))
+    // Browsers fire 'pause' just before 'ended'. Once audio has started, any stop
+    // counts as spoken so the caller doesn't repeat it with browser speech.
+    const stopped = () => finish(element.currentTime > 0)
+    const timeout = setTimeout(stopped, speechCapMs(text))
     element.addEventListener('ended', ended)
-    element.addEventListener('error', cancel)
-    element.addEventListener('pause', cancel)
+    element.addEventListener('error', stopped)
+    element.addEventListener('pause', stopped)
     signal.addEventListener('abort', cancel, { once: true })
     element.src = url
     element.play().catch(cancel)
