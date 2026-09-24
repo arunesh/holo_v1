@@ -1,0 +1,36 @@
+{
+  "id": "declarative-attention",
+  "title": "Declarative Attention",
+  "topic": "gpu-memory",
+  "description": "Read less KV. Move no KV. An interactive, explicitly simulated journey from an empty GPU to selective attention.",
+  "scene": {
+    "type": "gpu-memory",
+    "params": {
+      "scaffold_tokens": 256,
+      "kv_heads": 8,
+      "head_dimension": 128,
+      "bytes_per_value": 2,
+      "chunks": [
+        {"id": 1, "label": "C1", "tokens": 2048, "color": "#47d9c2"},
+        {"id": 2, "label": "C2", "tokens": 2048, "color": "#e7bf63"},
+        {"id": 3, "label": "C3", "tokens": 2048, "color": "#e98772"},
+        {"id": 4, "label": "C4", "tokens": 2048, "color": "#c55f73"}
+      ]
+    }
+  },
+  "narration": [
+    {"id": "empty", "title": "An empty GPU", "text": "This is a GPU. The math happens here. Its memory is here. It plugs into a computer, through a cable called PCIe.", "cues": [{"text": "This is a GPU.", "spotlight": ["gpu"]}, {"text": "The math happens here.", "spotlight": ["compute"]}, {"text": "Its memory is here.", "spotlight": ["memory"]}, {"text": "It plugs into a computer,", "spotlight": ["host"]}, {"text": "through a cable called PCIe.", "spotlight": ["pcie"]}], "commands": [{"op": "daStage", "args": {"stage": "empty"}}], "hold_ms": 1100},
+    {"id": "weights", "title": "Weights arrive", "text": "The model's weights travel over PCIe and stay in GPU memory.", "cues": [{"text": "The model's weights travel over PCIe", "spotlight": ["pcie"]}, {"text": "and stay in GPU memory.", "spotlight": ["weights"]}], "commands": [{"op": "daStage", "args": {"stage": "weights"}}], "hold_ms": 1000},
+    {"id": "request", "title": "A long request", "text": "A long request arrives: four documents, C1 to C4, plus SYS: the instructions and the question. The question: how many years did the project take?", "cues": [{"text": "A long request arrives: four documents, C1 to C4,", "spotlight": ["host"]}, {"text": "plus SYS: the instructions and the question.", "spotlight": ["host"]}, {"text": "The question: how many years did the project take?", "spotlight": []}], "commands": [{"op": "daStage", "args": {"stage": "request"}}], "hold_ms": 1100},
+    {"id": "prefill", "title": "Build the KV cache", "text": "The GPU reads it once, storing every token in a KV cache. Each document gets its own seat.", "cues": [{"text": "The GPU reads it once, storing every token in a KV cache.", "spotlight": ["seats"]}, {"text": "Each document gets its own seat.", "spotlight": ["docs"]}], "commands": [{"op": "daStage", "args": {"stage": "prefill"}}], "hold_ms": 1400},
+    {"id": "vanilla", "title": "Read everything", "text": "For each new word, global attention reads every seat again. The dots are data being read, not moved.", "cues": [{"text": "For each new word, global attention reads every seat again.", "spotlight": ["seats"]}, {"text": "The dots are data being read, not moved.", "spotlight": ["seats", "compute"]}], "commands": [{"op": "daMode", "args": {"mode": "global"}}, {"op": "daDecode", "args": {"text": "Looking"}}], "hold_ms": 1000},
+    {"id": "repeat", "title": "Pay again, every token", "text": "Next word: all thirty-three megabytes, read again. Every word pays this. With long prompts, this reading is the slow part.", "cues": [{"text": "Next word: all thirty-three megabytes, read again.", "spotlight": ["seats"]}, {"text": "Every word pays this.", "spotlight": ["meter"]}, {"text": "With long prompts, this reading is the slow part.", "spotlight": []}], "commands": [{"op": "daDecode", "args": {"text": "through the context…"}}], "hold_ms": 1200},
+    {"id": "focus", "title": "Declare where to look", "text": "Declarative attention lets the model say where to look. It writes a note: focus C3. Now only C3 is read. The rest dim, but stay put. What will the next word read?", "cues": [{"text": "Declarative attention lets the model say where to look.", "spotlight": []}, {"text": "It writes a note: focus C3.", "spotlight": ["host"]}, {"text": "Now only C3 is read. The rest dim, but stay put.", "spotlight": ["c3"]}, {"text": "What will the next word read?", "spotlight": []}], "commands": [{"op": "daMode", "args": {"mode": "focus", "chunks": [3]}}], "hold_ms": 1400, "checkpoint": "read-set"},
+    {"id": "sparse", "title": "Read less", "text": "Just SYS, C3 and the reply so far. About a quarter of the reading. Memory use: unchanged. Did anything get freed?", "cues": [{"text": "Just SYS, C3 and the reply so far.", "spotlight": ["sys", "c3", "reply"]}, {"text": "About a quarter of the reading.", "spotlight": ["meter"]}, {"text": "Memory use: unchanged. Did anything get freed?", "spotlight": ["memory"]}], "commands": [{"op": "daDecode", "args": {"text": "C3 has the dates."}}], "hold_ms": 1500, "checkpoint": "residency"},
+    {"id": "evidence", "title": "What the paper measured", "text": "In the paper: fifty-two percent fewer tokens read, for about 1.3 points less accuracy. Their measurement, not this demo's.", "cues": [{"text": "In the paper: fifty-two percent fewer tokens read,", "spotlight": []}, {"text": "for about 1.3 points less accuracy.", "spotlight": []}, {"text": "Their measurement, not this demo's.", "spotlight": []}], "commands": [], "hold_ms": 1400},
+    {"id": "global", "title": "Look around again", "text": "Unsure? Switch back to global and read everything. Nothing reloads. It never left.", "cues": [{"text": "Unsure? Switch back to global and read everything.", "spotlight": ["seats"]}, {"text": "Nothing reloads. It never left.", "spotlight": ["memory"]}], "commands": [{"op": "daMode", "args": {"mode": "global"}}, {"op": "daDecode", "args": {"text": "Cross-checking…"}}], "hold_ms": 1100},
+    {"id": "local", "title": "Answer from what you know", "text": "Local mode skips every document. SYS and the reply are enough to answer: eight years. Why is the read bar still above zero?", "cues": [{"text": "Local mode skips every document.", "spotlight": ["docs"]}, {"text": "SYS and the reply are enough to answer: eight years.", "spotlight": ["sys", "reply"]}, {"text": "Why is the read bar still above zero?", "spotlight": ["meter"]}], "commands": [{"op": "daMode", "args": {"mode": "local"}}, {"op": "daDecode", "args": {"text": "<answer>8 years</answer>"}}], "hold_ms": 1600, "checkpoint": "local"},
+    {"id": "point", "title": "The seats never changed", "text": "Read less KV. Move no KV. Your turn: click a seat, decode a word, watch the bar.", "cues": [{"text": "Read less KV. Move no KV.", "spotlight": ["seats"]}, {"text": "Your turn: click a seat, decode a word, watch the bar.", "spotlight": []}], "commands": [], "hold_ms": 1600, "emphasis": true}
+  ],
+  "affordances": []
+}

@@ -8,6 +8,7 @@ import './login.css'
 // hovering or pressing a sign-in control feeds a forward pass through the
 // network — signing in is the first input token.
 export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void }) {
+  const isMemoryLesson = new URLSearchParams(location.search).get('lesson') === 'declarative-attention'
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<{ text: string; error?: boolean } | null>(null)
   const firePulse = useRef<() => void>(() => {})
@@ -31,7 +32,11 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
     }
   }
 
-  const onEnterSession = () => {
+  const onEnterSession = (lessonId = isMemoryLesson ? 'declarative-attention' : 'gpt2') => {
+    const url = new URL(location.href)
+    if (lessonId === 'gpt2') url.searchParams.delete('lesson')
+    else url.searchParams.set('lesson', lessonId)
+    history.replaceState(null, '', url)
     firePulse.current()
     setBusy(true)
     // let the pulse travel before the scene swap
@@ -55,31 +60,35 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
         </p>
       </header>
       <main className="login-card">
+        <div className="session-catalogue">
+        {[
+          {id:'gpt2',label:'LIVE MODEL',title:'Step into the Transformer',description:'Ride a GPT-2 forward pass — attention heads, MLPs, and next-token predictions in real space.',meta:['GPT-2 SMALL','12 LAYERS','124M PARAMS']},
+          {id:'declarative-attention',label:'INTERACTIVE LESSON',title:'Declarative Attention',description:'Read less KV. Move no KV. Step inside a GPU, predict the next read, and discover what stays resident.',meta:['SIMULATED','4 CHUNKS','KV READS']},
+        ].map(lesson =>
         <button
+          key={lesson.id}
           className="session-tile"
-          onClick={onEnterSession}
+          onClick={() => onEnterSession(lesson.id)}
           onMouseEnter={() => firePulse.current()}
           disabled={busy}
         >
           <span className="session-label">
             <span className="live-dot" />
-            LIVE SESSION
+            {lesson.label}
           </span>
           <span className="session-title">
-            Step into the Transformer
+            {lesson.title}
             <span className="session-arrow">→</span>
           </span>
           <span className="session-desc">
-            Ride a GPT-2 forward pass — attention heads, MLPs, and next-token predictions in
-            real space.
+            {lesson.description}
           </span>
           <span className="session-meta">
-            <span>GPT-2 SMALL</span>
-            <span>12 LAYERS</span>
-            <span>124M PARAMS</span>
+            {lesson.meta.map(value=><span key={value}>{value}</span>)}
           </span>
-        </button>
-        <p className="more-sessions">More sessions docking soon.</p>
+        </button>)}
+        </div>
+        <p className="login-note">Choose a lesson to enter as a guest. No account required.</p>
         <div className="login-or">OR</div>
         <button
           className="g-btn"

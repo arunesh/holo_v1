@@ -3,7 +3,8 @@
 .login {
   position: fixed;
   inset: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  padding: clamp(24px, 5vh, 56px) clamp(20px, 7vw, 130px) 40px;
   background: radial-gradient(1100px 700px at 28% 45%, #0b1122 0%, var(--void) 62%);
 }
 
@@ -16,9 +17,7 @@
 
 /* ---- page header: brand + tagline, above the card ---- */
 .login-header {
-  position: absolute;
-  top: clamp(24px, 6vh, 56px);
-  left: clamp(20px, 7vw, 130px);
+  position: relative;
   width: min(520px, calc(100vw - 40px));
   animation: header-in 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
@@ -43,11 +42,9 @@
 }
 
 .login-card {
-  position: absolute;
-  top: 50%;
-  left: clamp(20px, 7vw, 130px);
-  transform: translateY(-50%);
-  width: min(410px, calc(100vw - 40px));
+  position: relative;
+  margin-top: 30px;
+  width: min(820px, 100%);
   padding: 28px 36px 28px;
   background: rgba(10, 14, 26, 0.78);
   border: 1px solid rgba(126, 160, 255, 0.25);
@@ -58,9 +55,13 @@
 }
 
 @keyframes card-in {
-  from { opacity: 0; transform: translateY(calc(-50% + 14px)); }
-  to   { opacity: 1; transform: translateY(-50%); }
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+.session-catalogue { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.session-catalogue .session-tile { display: flex; flex-direction: column; }
+.session-catalogue .session-meta { margin-top: auto; width: 100%; }
+.session-catalogue .session-desc { margin-bottom: 20px; }
 
 .login-eyebrow {
   display: flex;
@@ -149,6 +150,9 @@
 }
 .session-tile:active { transform: translateY(0); }
 .session-tile:disabled { opacity: 0.6; cursor: default; }
+.lesson-link { display: block; width: 100%; margin-top: 12px; padding: 8px 0; text-align: left; background: transparent; border: 0; color: var(--signal); font: 12px 'Space Grotesk', sans-serif; cursor: pointer; }
+.lesson-link:hover { color: var(--pulse); }
+.lesson-link:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
 
 .session-label {
   display: flex;
@@ -232,25 +236,23 @@
 }
 
 @media (max-width: 720px) {
+  .session-catalogue { grid-template-columns: 1fr; }
   .login-card {
-    left: 50%;
-    transform: translate(-50%, -50%);
+    padding: 20px;
   }
   .login-header {
-    left: 50%;
-    transform: translateX(-50%);
     text-align: center;
   }
   .login-about { margin-inline: auto; }
   .login-eyebrow { justify-content: center; }
   .login-eyebrow::after { display: none; }
   @keyframes card-in {
-    from { opacity: 0; transform: translate(-50%, calc(-50% + 14px)); }
-    to   { opacity: 1; transform: translate(-50%, -50%); }
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
   @keyframes header-in {
-    from { opacity: 0; transform: translate(-50%, -10px); }
-    to   { opacity: 1; transform: translate(-50%, 0); }
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 }
 

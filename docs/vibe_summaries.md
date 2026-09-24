@@ -1,3 +1,25 @@
+⏺ I fixed findings 1–4 and pushed the commit to PR #1 as 0395fd0. Note that the PR comes from the contributor's fork (JhonSummer/holo_v1), so the commit is on their branch through maintainer edits. It will show up in
+  the PR for them to see.
+
+  The fixes:
+  1. Focus selection wiped (simulation.ts): switching to global or local mode with no chunks now keeps the last focus selection, so the Focus button can restore it.
+  2. Empty tutor reply breaking history (DeclarativeAttentionLesson.tsx): when the tutor replies with commands only, history now stores (Updated the scene.) instead of an empty turn.
+  3. Transformer beats misread as Declarative Attention beats (pod.py): Pod now picks the beat type from the scene type instead of letting Pydantic guess each beat.
+  4. Any message treated as a disconnect (session.py): the socket now ignores stray messages while the tutor is answering and only cancels on a real disconnect.
+
+  Testing: I added a regression test for 1, 3 and 4, and checked that each fails without its fix and passes with it. There's no test for 2 because that code is inside the React component. With the fixes, all 28
+  backend tests, the 40 frontend test:da tests and tsc pass.
+
+  Problems I hit while testing:
+  - requirements.txt pins torch==2.5.1, which has no wheel for this Mac. I installed everything else into a throwaway venv at /tmp/holo-venv.
+  - The existing backend tests import jsonschema, which isn't in requirements.txt.
+  - scripts/test-spatial-interaction.mjs imports playwright, which isn't a dependency, so it can't run at all. That's worse than finding 9 said.
+
+  I'll add the last two to the follow-up fixes.
+
+  Your local checkout is still on lesson/declerative_attention. Once you've merged, tell me and I'll switch to main, fetch, and fix findings 5–10. For finding 6, the "Grok" wording, I'll change it to Claude unless you
+  want to keep it.
+------------------------------------------------------------------------------------------------------------------------
 ● Both issues are real and I can pin them to specific code. Here's the diagnosis and what I'd do about each.
 
   1. Zoom only works at the center

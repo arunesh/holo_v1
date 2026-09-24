@@ -83,6 +83,9 @@ Current scene state (what the learner is looking at right now):
 def respond(pod: Pod, query: str, scene: dict[str, Any]) -> dict[str, Any]:
     """Return {"narration": str, "commands": [{op, args}]}."""
     settings = get_settings()
+    if pod.scene.type == "gpu-memory":
+        from ..lessons.declarative_attention.tutor import respond as respond_to_memory
+        return respond_to_memory(pod, query, scene, settings)
     if not settings.has_anthropic:
         return _fallback(pod, query)
 

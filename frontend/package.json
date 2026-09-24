@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "test:da": "node scripts/test-declarative-attention.mjs && node --test scripts/test-lesson-experience.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview"

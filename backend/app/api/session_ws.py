@@ -21,6 +21,10 @@ async def session(ws: WebSocket, pod_id: str):
 
     loop = asyncio.get_event_loop()
     try:
+        if pod.scene.type == "gpu-memory":
+            from ..lessons.declarative_attention.session import memory_session
+            await memory_session(ws, pod)
+            return
         while True:
             msg = await ws.receive_json()
             query = (msg.get("query") or "").strip()
@@ -40,8 +44,8 @@ async def session(ws: WebSocket, pod_id: str):
             await ws.send_json({"type": "done"})
     except WebSocketDisconnect:
         return
-    except Exception as e:
+    except Exception:
         try:
-            await ws.send_json({"type": "error", "message": str(e)})
+            await ws.send_json({"type": "error", "message": "Session unavailable. Please try again."})
         except Exception:
             pass

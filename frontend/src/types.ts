@@ -11,7 +11,7 @@ export interface SceneParams {
 }
 
 export interface PodScene {
-  type: string // "transformer"
+  type: 'transformer'
   params: SceneParams
   default_input: string
 }
@@ -28,7 +28,7 @@ export interface AffordanceDef {
   args?: Record<string, string>
 }
 
-export interface Pod {
+export interface TransformerPod {
   id: string
   title: string
   topic: string
@@ -37,6 +37,8 @@ export interface Pod {
   narration: Beat[]
   affordances: AffordanceDef[]
 }
+
+export type Pod = TransformerPod | import('./lessons/declarative-attention/types').DeclarativeAttentionPod
 
 export interface PodSummary {
   id: string

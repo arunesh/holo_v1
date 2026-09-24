@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type {
-  Pod,
+  TransformerPod as Pod,
   PodSummary,
   Focus,
   AttentionView,
@@ -92,6 +92,8 @@ export const usePodStore = create<PodState>((set) => ({
     set({
       pod,
       inputText: pod?.scene.default_input ?? '',
+      inference: null,
+      inferenceLoading: false,
       focus: defaultFocus,
       highlightedBlock: null,
       attention: defaultAttention,

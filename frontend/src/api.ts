@@ -24,8 +24,9 @@ export async function runInference(text: string, podId = 'gpt2'): Promise<Infere
 
 // Text-to-speech via the backend ElevenLabs proxy. Returns an audio blob URL,
 // or null if the server has no key configured (caller falls back to Web Speech).
-export async function synthesizeSpeech(text: string): Promise<string | null> {
+export async function synthesizeSpeech(text: string, signal?: AbortSignal): Promise<string | null> {
   const r = await fetch('/api/tts', {
+    signal,
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
@@ -37,19 +38,19 @@ export async function synthesizeSpeech(text: string): Promise<string | null> {
 }
 
 // Speech-to-text via backend ElevenLabs proxy. Returns transcript or null if unavailable.
-export async function transcribeSpeech(audio: Blob): Promise<string | null> {
+export async function transcribeSpeech(audio: Blob, signal?: AbortSignal): Promise<string | null> {
   const form = new FormData()
   form.append('audio', audio, 'audio.webm')
-  const r = await fetch('/api/stt', { method: 'POST', body: form })
+  const r = await fetch('/api/stt', { method: 'POST', body: form, signal })
   if (r.status === 204) return null
   if (!r.ok) return null
   const data = await r.json()
   return data.text ?? null
 }
 
-export async function fetchVoiceStatus(): Promise<{ tts: boolean; stt: boolean }> {
+export async function fetchVoiceStatus(signal?: AbortSignal): Promise<{ tts: boolean; stt: boolean }> {
   try {
-    const r = await fetch('/api/voice/status')
+    const r = await fetch('/api/voice/status', {signal})
     if (!r.ok) return { tts: false, stt: false }
     return r.json()
   } catch {

@@ -10,7 +10,8 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from ..lessons.declarative_attention.schema import MemoryScene, DABeat, ModeCommand
 
 # The fixed command vocabulary. Authored beats and Claude both speak only these ops.
 AffordanceOp = Literal[
@@ -39,7 +40,7 @@ class SceneParams(BaseModel):
 
 
 class PodScene(BaseModel):
-    type: str = "transformer"
+    type: Literal["transformer"] = "transformer"
     params: SceneParams = Field(default_factory=SceneParams)
     default_input: str = "The quick brown fox"
 
@@ -66,9 +67,36 @@ class Pod(BaseModel):
     title: str
     topic: str
     description: str
-    scene: PodScene = Field(default_factory=PodScene)
-    narration: list[Beat] = Field(default_factory=list)
+    scene: PodScene | MemoryScene = Field(default_factory=PodScene)
+    narration: list[Beat | DABeat] = Field(default_factory=list)
     affordances: list[AffordanceDef] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_beats_for_scene(cls, data):
+        # A smart union would guess per beat (Beat ignores extra keys), so choose
+        # the beat model from the scene type instead.
+        if not isinstance(data, dict) or not isinstance(data.get("narration"), list):
+            return data
+        scene = data.get("scene")
+        scene_type = scene.get("type") if isinstance(scene, dict) else getattr(scene, "type", "transformer")
+        model = DABeat if scene_type == "gpu-memory" else Beat
+        narration = [model.model_validate(beat) if isinstance(beat, dict) else beat for beat in data["narration"]]
+        return {**data, "narration": narration}
+
+    @model_validator(mode="after")
+    def validate_lesson_commands(self):
+        is_memory = isinstance(self.scene, MemoryScene)
+        for beat in self.narration:
+            if isinstance(beat, DABeat) != is_memory:
+                raise ValueError("Commands must belong to the selected scene type")
+            if is_memory:
+                valid_ids = {chunk.id for chunk in self.scene.params.chunks}
+                for command in beat.commands:
+                    if isinstance(command, ModeCommand) and command.args.mode == "focus":
+                        if not command.args.chunks or not set(command.args.chunks) <= valid_ids:
+                            raise ValueError("Focus requires valid chunk IDs")
+        return self
 
 
 class PodSummary(BaseModel):
