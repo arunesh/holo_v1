@@ -1,3 +1,31 @@
+⏺ All eight findings are fixed and pushed to main as three commits, 07f925f, 51423b5 and 17abd2f. Nothing is deployed yet, so prod is still on the lesson release.
+
+  Fixes (07f925f)
+  - #5 GPT-2 lesson reset: loading the lesson and loading the lesson list are now separate steps, so a slow list no longer wipes the scene mid-narration.
+  - #6 Grok: the Declarative Attention UI now says "The tutor is thinking" and "Ask the tutor". The prompt no longer tells Claude it's a Grok connection, but still tells it it can't show its own model's KV cache.
+
+  Tutor cleanup (51423b5)
+  - #10 One API client: a new backend/app/lessons/tutor.py holds a single reused Anthropic client and the Claude call both lesson tutors were duplicating. Each lesson now keeps only its prompt, tool definition and checks. That removes about 90 lines.
+  - #7 Dead code: the unreachable Declarative Attention branch in anthropic_client.py and the synchronous respond() are deleted. The tests now exercise respond_async, the path production uses.
+  - #8 Duplicated check: there's now one validate_focus_chunks rule, used by both the pod validator and the tutor.
+  - New tests for the shared call: a valid result, three fallback cases, client reuse, and cancellation not being swallowed.
+
+  Tooling (17abd2f)
+  - #9 Spatial test: it now drives your installed Chrome through playwright-core (a dev dependency, no browser download) via npm run test:spatial. Its screenshot folder is gitignored.
+  - #11: jsonschema==4.26.0 is added to requirements.txt.
+  - #12: the README now says Python 3.10–3.12, since torch 2.5.1 has no Python 3.13 wheels on macOS. Prod is on 3.12, so it's fine.
+
+  Testing
+  - Backend: 57 passed, in a fresh Python 3.11 environment built from the unmodified requirements.txt, torch 2.5.1 included.
+  - Frontend: test:da 26/26, test:pa 25/25; the typecheck and build pass.
+  - Spatial test: it runs for the first time, and 14/14 pass against a local server.
+  - Browser smoke test of the PagedAttention lesson: all controls work, and the tutor's offline fallback works through the refactored socket path.
+  - Not tested: a real Claude call through the new shared client, because there's no API key locally. The fake-client tests cover that code path, but the first real tutor question on prod will be its first live run.
+
+  The GPT-2 tutor in anthropic_client.py still creates a new synchronous client per question. It wasn't part of finding #10, which was about the two lesson tutors, so I left it alone.
+
+  The Grok fix and the shared client only take effect on prod after a deploy. It's the same pull and ./scripts/prod.sh as before; jsonschema is only used by the tests, so prod doesn't need a pip install. Want me to deploy?
+------------------------------------------------------------------------------------------------------------------------
 ⏺ The bug is in how the Declarative Attention lesson's voice player detects the end of the ElevenLabs audio. I've fixed it locally and added tests, but haven't committed or deployed anything yet.
 
   What happens: when an audio clip plays to the end, the browser fires a pause event just before ended. playAudio in frontend/src/lessons/declarative-attention/voicePlayback.ts treated pause as "playback failed". So
