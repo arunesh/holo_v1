@@ -113,17 +113,18 @@ All configuration comes from `.env` in the repo root (see [`.env.example`](.env.
 | `HOLODECK_FRONTEND_PORT` | no | Dev server port (default `8350`) |
 | `HOLODECK_PORT` | no | Production server port (default `8350`) |
 
-**Optional Google sign-in.** The login page offers guest access by default. To enable
-"Continue with Google", create a *Web application* OAuth client ID in Google Cloud, add
-your origin (e.g. `http://localhost:8350`) under *Authorized JavaScript origins*, and put
-it in `frontend/.env.local`:
+**Sign-in.** The login page requires Google sign-in. Create a *Web application* OAuth
+client ID in Google Cloud, add your origin (e.g. `http://localhost:8350`) under
+*Authorized JavaScript origins*, and put it in `frontend/.env.local`. To skip Google (for
+local development, or a public demo), turn on guest access instead:
 
 ```bash
 VITE_GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
+VITE_ALLOW_GUEST=true   # optional: show "enter as a guest"
 ```
 
-Sign-in only personalizes the UI. The backend doesn't verify it, so it doesn't protect
-the API.
+Both are read at build time, so restart `npm run dev` or rebuild after changing them.
+Sign-in gates the UI only. The backend doesn't verify it, so it doesn't protect the API.
 
 ## Generating pods
 

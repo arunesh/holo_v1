@@ -1,7 +1,7 @@
 // Client-side session + Google Identity Services sign-in.
 // Real Google OAuth requires VITE_GOOGLE_CLIENT_ID (a Web client ID from the
-// Google Cloud console with this origin allowed); without it the login page
-// offers guest access and explains what's missing.
+// Google Cloud console with this origin allowed). Guest access is off unless the
+// build sets VITE_ALLOW_GUEST=true. This gates the UI only; the API is not protected.
 
 export type SessionUser = {
   name: string
@@ -11,10 +11,13 @@ export type SessionUser = {
 }
 
 const KEY = 'holodeck.session'
+export const guestAllowed = import.meta.env.VITE_ALLOW_GUEST === 'true'
 
 export function loadSession(): SessionUser | null {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? 'null')
+    const user: SessionUser | null = JSON.parse(localStorage.getItem(KEY) ?? 'null')
+    // Guest sessions saved before guest access was turned off must sign in again.
+    return user?.provider === 'guest' && !guestAllowed ? null : user
   } catch {
     return null
   }

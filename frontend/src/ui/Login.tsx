@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { signInWithGoogle, googleConfigured } from '../auth/session'
+import { signInWithGoogle, googleConfigured, guestAllowed } from '../auth/session'
 import type { SessionUser } from '../auth/session'
 import { GoogleIcon, HoloMark } from './icons'
 import './login.css'
@@ -8,15 +8,26 @@ import './login.css'
 // hovering or pressing a sign-in control feeds a forward pass through the
 // network — signing in is the first input token.
 export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void }) {
-  const isMemoryLesson = new URLSearchParams(location.search).get('lesson') === 'declarative-attention'
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<{ text: string; error?: boolean } | null>(null)
   const firePulse = useRef<() => void>(() => {})
 
-  const onGoogle = async () => {
+  /** Deep links keep their ?lesson=…; a tile picks its own lesson. */
+  const openLesson = (lessonId?: string) => {
+    if (!lessonId) return
+    const url = new URL(location.href)
+    if (lessonId === 'gpt2') url.searchParams.delete('lesson')
+    else url.searchParams.set('lesson', lessonId)
+    history.replaceState(null, '', url)
+  }
+
+  const onGoogle = async (lessonId?: string) => {
     if (!googleConfigured) {
       setNote({
-        text: 'Google sign-in needs a client ID on this deployment (VITE_GOOGLE_CLIENT_ID). Guest access opens the same holodeck.',
+        text: guestAllowed
+          ? 'Google sign-in needs a client ID on this deployment (VITE_GOOGLE_CLIENT_ID). Guest access opens the same holodeck.'
+          : 'Sign-in is not configured on this deployment (VITE_GOOGLE_CLIENT_ID).',
+        error: !guestAllowed,
       })
       return
     }
@@ -24,19 +35,21 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
     setNote(null)
     firePulse.current()
     try {
-      onSignIn(await signInWithGoogle())
+      const user = await signInWithGoogle()
+      openLesson(lessonId)
+      onSignIn(user)
     } catch {
-      setNote({ text: 'Google sign-in did not complete. Try again, or continue as guest.', error: true })
+      setNote({
+        text: `Google sign-in did not complete. Try again${guestAllowed ? ', or continue as guest' : ''}.`,
+        error: true,
+      })
     } finally {
       setBusy(false)
     }
   }
 
-  const onEnterSession = (lessonId = isMemoryLesson ? 'declarative-attention' : 'gpt2') => {
-    const url = new URL(location.href)
-    if (lessonId === 'gpt2') url.searchParams.delete('lesson')
-    else url.searchParams.set('lesson', lessonId)
-    history.replaceState(null, '', url)
+  const onEnterAsGuest = (lessonId: string) => {
+    openLesson(lessonId)
     firePulse.current()
     setBusy(true)
     // let the pulse travel before the scene swap
@@ -64,11 +77,12 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
         {[
           {id:'gpt2',label:'LIVE MODEL',title:'Step into the Transformer',description:'Ride a GPT-2 forward pass — attention heads, MLPs, and next-token predictions in real space.',meta:['GPT-2 SMALL','12 LAYERS','124M PARAMS']},
           {id:'declarative-attention',label:'INTERACTIVE LESSON',title:'Declarative Attention',description:'Read less KV. Move no KV. Step inside a GPU, predict the next read, and discover what stays resident.',meta:['SIMULATED','4 CHUNKS','KV READS']},
+          {id:'paged-attention',label:'INTERACTIVE LESSON',title:'PagedAttention',description:'Stop reserving, start paging. See where KV cache memory goes, and how vLLM packs it into blocks.',meta:['SIMULATED','VLLM','KV BLOCKS']},
         ].map(lesson =>
         <button
           key={lesson.id}
           className="session-tile"
-          onClick={() => onEnterSession(lesson.id)}
+          onClick={() => (guestAllowed ? onEnterAsGuest(lesson.id) : onGoogle(lesson.id))}
           onMouseEnter={() => firePulse.current()}
           disabled={busy}
         >
@@ -88,11 +102,17 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
           </span>
         </button>)}
         </div>
-        <p className="login-note">Choose a lesson to enter as a guest. No account required.</p>
-        <div className="login-or">OR</div>
+        {guestAllowed ? (
+          <>
+            <p className="login-note">Choose a lesson to enter as a guest. No account required.</p>
+            <div className="login-or">OR</div>
+          </>
+        ) : (
+          <p className="login-note">Sign in with Google to enter. Pick a lesson above, or sign in below.</p>
+        )}
         <button
           className="g-btn"
-          onClick={onGoogle}
+          onClick={() => onGoogle()}
           onMouseEnter={() => firePulse.current()}
           disabled={busy}
         >

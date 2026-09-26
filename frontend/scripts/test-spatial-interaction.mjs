@@ -119,8 +119,11 @@ async function drag(box, from, delta, back = false) {
 }
 
 try {
-  await page.goto(base, { waitUntil: 'networkidle' })
-  await page.getByRole('button', { name: /INTERACTIVE LESSON Declarative Attention/ }).click()
+  // Sign-in is checked in the browser only, so a stored session stands in for Google.
+  await page.addInitScript(() =>
+    localStorage.setItem('holodeck.session', JSON.stringify({ name: 'Test', provider: 'google' })),
+  )
+  await page.goto(`${base}/?lesson=declarative-attention`, { waitUntil: 'networkidle' })
   await page.getByRole('heading', { name: 'Read less KV. Move no KV.' }).waitFor()
   await button('Voice on').click()
   const canvas = page.locator('.da-canvas canvas')
