@@ -29,10 +29,13 @@ export default function TransformerApp({ user, onSignOut, lesson, catalogue, onS
   const { play, pause, restart, step } = useNarration(speak, stopSpeaking)
 
   // The shell chooses the lesson; this component owns only the transformer view.
+  // Separate effects: setPod resets the scene, so a late catalogue must not re-run it.
+  useEffect(() => {
+    usePodStore.getState().setPod(lesson)
+  }, [lesson])
   useEffect(() => {
     usePodStore.getState().setPods(catalogue)
-    usePodStore.getState().setPod(lesson)
-  }, [lesson, catalogue])
+  }, [catalogue])
 
   const onAsk = useCallback(
     async (text: string) => {

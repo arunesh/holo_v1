@@ -225,7 +225,7 @@ export default function DeclarativeAttentionLesson({
         <div className="da-caption" aria-live="polite">
           <span className="da-kicker">
             {thinking
-              ? 'GROK IS THINKING · YOUR SCENE IS HELD'
+              ? 'THE TUTOR IS THINKING · YOUR SCENE IS HELD'
               : checkpoint
                 ? 'PAUSED FOR YOUR PREDICTION · CHECK BELOW THE SCENE'
                 : 'THE GUIDE'}
@@ -502,7 +502,7 @@ export default function DeclarativeAttentionLesson({
             {voice.recording ? '■ Stop mic' : 'Microphone'}
           </button>
           <button type="submit" disabled={thinking || !question.trim()}>
-            Ask Grok ↗
+            Ask the tutor ↗
           </button>
         </form>
         {history.length > 0 && (
