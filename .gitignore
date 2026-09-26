@@ -3,6 +3,7 @@
 backend/.venv/
 frontend/node_modules/
 frontend/dist/
+frontend/spatial-interaction/
 
 # secrets — cover .env.local, .env.development, etc., not just .env
 .env*

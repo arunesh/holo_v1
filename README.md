@@ -75,7 +75,7 @@ frontend (`frontend/dist`).
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.10–3.12 (the pinned torch 2.5.1 has no Python 3.13 wheels on macOS)
 - Node.js 18+ (`scripts/setup.sh` installs a local copy if you don't have one)
 - An [Anthropic API key](https://console.anthropic.com/) for the AI tutor and pod generation
 - Optional: an [ElevenLabs](https://elevenlabs.io/) API key for higher-quality voice.

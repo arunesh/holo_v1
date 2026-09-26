@@ -1,13 +1,12 @@
 // Browser interaction checks for the DA spatial view, with GPT-2 as the reference scene.
-// Needs a running app and Playwright + Chrome:
-//   HOLO_URL=http://127.0.0.1:8350 PLAYWRIGHT_MODULE=/path/to/playwright/index.mjs \
-//     node scripts/test-spatial-interaction.mjs
+// Needs a running app and a local Google Chrome (playwright-core drives it; no browser download):
+//   HOLO_URL=http://127.0.0.1:8350 npm run test:spatial
 import { readFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import ts from 'typescript'
 
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
+const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright-core')
 const base = process.env.HOLO_URL || 'http://127.0.0.1:8350'
 const output = path.resolve(process.env.SPATIAL_OUTPUT || 'spatial-interaction')
 await mkdir(output, { recursive: true })

@@ -11,3 +11,4 @@ torch==2.5.1
 transformers==4.47.1
 yt-dlp==2024.12.13
 pytest==8.3.4
+jsonschema==4.26.0
