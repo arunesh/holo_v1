@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "test:da": "node scripts/test-declarative-attention.mjs && node --test scripts/test-lesson-experience.mjs",
+    "test:pa": "node --test scripts/test-paged-attention.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview"

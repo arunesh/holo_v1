@@ -38,7 +38,10 @@ export interface TransformerPod {
   affordances: AffordanceDef[]
 }
 
-export type Pod = TransformerPod | import('./lessons/declarative-attention/types').DeclarativeAttentionPod
+export type Pod =
+  | TransformerPod
+  | import('./lessons/declarative-attention/types').DeclarativeAttentionPod
+  | import('./lessons/paged-attention/types').PagedAttentionPod
 
 export interface PodSummary {
   id: string

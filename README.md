@@ -19,6 +19,11 @@ pass, or showing activations down to the decimal.
 - **Declarative Attention**: a simulated GPU-memory lesson (SMs, L2, HBM, KV cache)
   showing how global / focus / local attention change which KV chunks are read during
   decode. See [`docs/declarative-attention.md`](docs/declarative-attention.md).
+- **PagedAttention**: a simulated KV cache allocator for the
+  [vLLM paper](https://arxiv.org/abs/2309.06180). Watch contiguous allocation waste memory
+  (reserved slots, internal and external fragmentation), then serve the same requests with
+  paged blocks, block tables, copy-on-write sharing and preemption to CPU. See
+  [`docs/paged-attention.md`](docs/paged-attention.md).
 
 New pods can be generated from a YouTube explainer URL (see [Generating pods](#generating-pods)).
 
@@ -99,7 +104,7 @@ All configuration comes from `.env` in the repo root (see [`.env.example`](.env.
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | yes | AI tutor and pod generation. Without it, guided playback still works but the GPT-2 tutor only handles simple keyword commands and the Declarative Attention tutor says it's offline. |
+| `ANTHROPIC_API_KEY` | yes | AI tutor and pod generation. Without it, guided playback still works but the GPT-2 tutor only handles simple keyword commands and the Declarative Attention and PagedAttention tutors say they're offline. |
 | `ELEVENLABS_API_KEY` | no | ElevenLabs TTS/STT. Falls back to Web Speech if unset or out of quota. |
 | `ELEVENLABS_VOICE_ID` | no | ElevenLabs voice to use |
 | `HOLODECK_CLAUDE_MODEL` | no | Model used by the tutor |
@@ -154,8 +159,8 @@ python3 scripts/fetch_transcript.py "https://youtu.be/wjZofJX0v4M" \
 # backend
 cd backend && .venv/bin/python -m pytest tests/ -q
 
-# frontend (Declarative Attention simulation + playback)
-cd frontend && npm run test:da
+# frontend (lesson simulations + playback)
+cd frontend && npm run test:da && npm run test:pa
 ```
 
 ## Deploying
