@@ -1,5 +1,6 @@
 import type { ConversationTurn, PACommand, PagedConfig, PagedState } from './types'
 import { kvBytesPerToken, layoutOf } from './simulation'
+import { openSocket } from '../../api'
 
 export function validateCommands(value: unknown, config: PagedConfig): PACommand[] {
   if (!Array.isArray(value) || value.length > 6) throw new Error('Invalid tutor commands.')
@@ -50,9 +51,7 @@ export function askTutor(
       reject(new Error('Cancelled'))
       return
     }
-    const ws = new WebSocket(
-      `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/session/${encodeURIComponent(podId)}`,
-    )
+    const ws = openSocket(`/ws/session/${encodeURIComponent(podId)}`)
     let text = ''
     let commands: PACommand[] = []
     let settled = false

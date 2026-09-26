@@ -120,9 +120,7 @@ def test_tutor_includes_recent_conversation(data):
     assert "96.3%" in args["system"]
 
 
-def test_socket_uses_the_paged_attention_tutor(data, monkeypatch):
-    from fastapi.testclient import TestClient
-    from app.main import app
+def test_socket_uses_the_paged_attention_tutor(data, monkeypatch, client, socket_protocols):
     from app.lessons.paged_attention import tutor
 
     async def fake_respond(pod, query, scene, settings):
@@ -130,15 +128,13 @@ def test_socket_uses_the_paged_attention_tutor(data, monkeypatch):
         return {"narration": f"You asked: {query}", "commands": [{"op": "paDecode", "args": {}}]}
 
     monkeypatch.setattr(tutor, "respond_async", fake_respond)
-    with TestClient(app).websocket_connect("/ws/session/paged-attention") as ws:
+    with client.websocket_connect("/ws/session/paged-attention", subprotocols=socket_protocols) as ws:
         ws.send_json({"query": "step", "scene": {}})
         messages = [ws.receive_json() for _ in range(4)]
     assert [m["type"] for m in messages] == ["thinking", "narration", "commands", "done"]
     assert messages[1]["text"] == "You asked: step"
 
 
-def test_catalogue_lists_the_lesson():
-    from fastapi.testclient import TestClient
-    from app.main import app
-    ids = [pod["id"] for pod in TestClient(app).get("/api/pods").json()]
+def test_catalogue_lists_the_lesson(client):
+    ids = [pod["id"] for pod in client.get("/api/pods").json()]
     assert "paged-attention" in ids

@@ -1,5 +1,6 @@
 // Browser interaction checks for the DA spatial view, with GPT-2 as the reference scene.
-// Needs a running app and a local Google Chrome (playwright-core drives it; no browser download):
+// Needs a running app started with HOLODECK_ALLOW_GUEST=true (the test signs in as a guest),
+// and a local Google Chrome (playwright-core drives it; no browser download):
 //   HOLO_URL=http://127.0.0.1:8350 npm run test:spatial
 import { readFileSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -119,10 +120,11 @@ async function drag(box, from, delta, back = false) {
 }
 
 try {
-  // Sign-in is checked in the browser only, so a stored session stands in for Google.
-  await page.addInitScript(() =>
-    localStorage.setItem('holodeck.session', JSON.stringify({ name: 'Test', provider: 'google' })),
-  )
+  const guest = await fetch(`${base}/api/auth/guest`, { method: 'POST' })
+  if (!guest.ok) throw new Error('Start the app with HOLODECK_ALLOW_GUEST=true to run this test.')
+  const { token, expires_at, user } = await guest.json()
+  const session = { ...user, token, expiresAt: expires_at * 1000 }
+  await page.addInitScript((value) => localStorage.setItem('holodeck.session', value), JSON.stringify(session))
   await page.goto(`${base}/?lesson=declarative-attention`, { waitUntil: 'networkidle' })
   await page.getByRole('heading', { name: 'Read less KV. Move no KV.' }).waitFor()
   await button('Voice on').click()

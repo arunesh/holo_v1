@@ -1,23 +1,33 @@
-// Client-side session + Google Identity Services sign-in.
-// Real Google OAuth requires VITE_GOOGLE_CLIENT_ID (a Web client ID from the
-// Google Cloud console with this origin allowed). Guest access is off unless the
-// build sets VITE_ALLOW_GUEST=true. This gates the UI only; the API is not protected.
+// Sign-in. Google (or a guest request, if the server allows guests) is exchanged at
+// /api/auth/* for our own short-lived session token. Every API call and tutor socket
+// carries that token, and the server rejects anything without a valid one.
 
 export type SessionUser = {
   name: string
   email?: string
   picture?: string
   provider: 'google' | 'guest'
+  token: string
+  /** Epoch milliseconds. */
+  expiresAt: number
+}
+
+export interface AuthConfig {
+  google_client_id: string | null
+  allow_guest: boolean
 }
 
 const KEY = 'holodeck.session'
-export const guestAllowed = import.meta.env.VITE_ALLOW_GUEST === 'true'
+/** Sockets offer [AUTH_PROTOCOL, token]; browsers can't set headers on WebSockets. */
+export const AUTH_PROTOCOL = 'holodeck.auth'
+/** Fired when the server rejects our token, so the app returns to the login page. */
+export const SIGNED_OUT = 'holodeck:signed-out'
 
 export function loadSession(): SessionUser | null {
   try {
     const user: SessionUser | null = JSON.parse(localStorage.getItem(KEY) ?? 'null')
-    // Guest sessions saved before guest access was turned off must sign in again.
-    return user?.provider === 'guest' && !guestAllowed ? null : user
+    // Sessions without a server token (older builds) or past expiry sign in again.
+    return user?.token && user.expiresAt > Date.now() ? user : null
   } catch {
     return null
   }
@@ -31,8 +41,36 @@ export function clearSession() {
   localStorage.removeItem(KEY)
 }
 
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined
-export const googleConfigured = Boolean(CLIENT_ID)
+export function signOutEverywhere() {
+  clearSession()
+  window.dispatchEvent(new Event(SIGNED_OUT))
+}
+
+export async function fetchAuthConfig(): Promise<AuthConfig> {
+  const r = await fetch('/api/auth/config')
+  if (!r.ok) throw new Error('auth-config-failed')
+  return r.json()
+}
+
+class SessionError extends Error {
+  constructor(readonly status: number) {
+    super(`session-${status}`)
+  }
+}
+
+async function exchange(path: string, init: RequestInit = {}): Promise<SessionUser> {
+  const r = await fetch(path, { method: 'POST', ...init })
+  if (!r.ok) throw new SessionError(r.status)
+  const data = await r.json()
+  return {
+    name: data.user.name,
+    email: data.user.email,
+    picture: data.user.picture,
+    provider: data.user.provider,
+    token: data.token,
+    expiresAt: data.expires_at * 1000,
+  }
+}
 
 let gisLoad: Promise<void> | null = null
 function loadGis(): Promise<void> {
@@ -52,12 +90,12 @@ function loadGis(): Promise<void> {
   return gisLoad
 }
 
-export async function signInWithGoogle(): Promise<SessionUser> {
-  if (!CLIENT_ID) throw new Error('missing-client-id')
+/** Google's popup gives an access token; the server checks it was issued to our client. */
+export async function signInWithGoogle(clientId: string): Promise<SessionUser> {
   await loadGis()
   const accessToken = await new Promise<string>((resolve, reject) => {
     const client = (window as any).google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
+      client_id: clientId,
       scope: 'openid email profile',
       callback: (resp: any) =>
         resp?.access_token ? resolve(resp.access_token) : reject(new Error(resp?.error ?? 'no token')),
@@ -65,15 +103,17 @@ export async function signInWithGoogle(): Promise<SessionUser> {
     })
     client.requestAccessToken()
   })
-  const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-    headers: { Authorization: `Bearer ${accessToken}` },
+  return exchange('/api/auth/google', {
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ access_token: accessToken }),
   })
-  if (!r.ok) throw new Error('userinfo-failed')
-  const info = await r.json()
-  return {
-    name: info.name || info.email || 'Explorer',
-    email: info.email,
-    picture: info.picture,
-    provider: 'google',
-  }
 }
+
+export const signInAsGuest = () => exchange('/api/auth/guest')
+
+export const refreshSession = (user: SessionUser) =>
+  exchange('/api/auth/refresh', { headers: { Authorization: `Bearer ${user.token}` } })
+
+/** True when the server, not the network, turned the session down. */
+export const rejected = (error: unknown) =>
+  error instanceof SessionError && (error.status === 401 || error.status === 403)

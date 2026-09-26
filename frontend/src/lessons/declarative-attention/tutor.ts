@@ -1,5 +1,6 @@
 import type { ConversationTurn, DACommand, MemoryConfig, MemoryState } from './types'
 import { nextRead, residentBytes } from './simulation'
+import { openSocket } from '../../api'
 
 export function validateCommands(value: unknown, config: MemoryConfig): DACommand[] {
   if (!Array.isArray(value) || value.length > 6) throw new Error('Invalid tutor commands.')
@@ -47,9 +48,7 @@ export function askTutor(
       reject(new Error('Cancelled'))
       return
     }
-    const ws = new WebSocket(
-      `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws/session/${encodeURIComponent(podId)}`,
-    )
+    const ws = openSocket(`/ws/session/${encodeURIComponent(podId)}`)
     let text = ''
     let commands: DACommand[] = []
     let settled = false

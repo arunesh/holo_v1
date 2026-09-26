@@ -3,6 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from ..auth import AUTH_PROTOCOL
 from ..services import anthropic_client, pod_store
 
 router = APIRouter()
@@ -11,7 +12,8 @@ _pool = ThreadPoolExecutor(max_workers=2)
 
 @router.websocket("/ws/session/{pod_id}")
 async def session(ws: WebSocket, pod_id: str):
-    await ws.accept()
+    # RequireSession already checked the token offered alongside AUTH_PROTOCOL.
+    await ws.accept(subprotocol=AUTH_PROTOCOL)
     try:
         pod = pod_store.load_pod(pod_id)
     except FileNotFoundError:

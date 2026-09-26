@@ -110,21 +110,26 @@ All configuration comes from `.env` in the repo root (see [`.env.example`](.env.
 | `HOLODECK_CLAUDE_MODEL` | no | Model used by the tutor |
 | `HOLODECK_GENERATOR_MODEL` | no | Model used for pod generation |
 | `HOLODECK_GPT2_MODEL` | no | Hugging Face GPT-2 variant (default `gpt2`) |
+| `HOLODECK_GOOGLE_CLIENT_ID` | for Google sign-in | OAuth web client whose tokens the server accepts |
+| `HOLODECK_SESSION_SECRET` | in production | Signs session tokens; without it, restarts sign everyone out |
+| `HOLODECK_SESSION_TTL` | no | Session token lifetime in seconds (default `3600`) |
+| `HOLODECK_ALLOW_GUEST` | no | `true` lets people enter without Google |
 | `HOLODECK_FRONTEND_PORT` | no | Dev server port (default `8350`) |
 | `HOLODECK_PORT` | no | Production server port (default `8350`) |
 
-**Sign-in.** The login page requires Google sign-in. Create a *Web application* OAuth
-client ID in Google Cloud, add your origin (e.g. `http://localhost:8350`) under
-*Authorized JavaScript origins*, and put it in `frontend/.env.local`. To skip Google (for
-local development, or a public demo), turn on guest access instead:
+**Sign-in.** Every API call and tutor socket needs a session. The browser signs in with
+Google, the server checks that Google issued the token to *our* client for a verified
+email, and then hands out its own short-lived token (1 hour by default, renewed while the
+tab is open). Create a *Web application* OAuth client ID in Google Cloud, add your origin
+(e.g. `http://localhost:8350`) under *Authorized JavaScript origins*, and set in `.env`:
 
 ```bash
-VITE_GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
-VITE_ALLOW_GUEST=true   # optional: show "enter as a guest"
+HOLODECK_GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
+HOLODECK_SESSION_SECRET=<openssl rand -hex 32>
+HOLODECK_ALLOW_GUEST=true   # optional: enter without Google, e.g. for local development
 ```
 
-Both are read at build time, so restart `npm run dev` or rebuild after changing them.
-Sign-in gates the UI only. The backend doesn't verify it, so it doesn't protect the API.
+Any Google account can sign in; there is no allow-list yet.
 
 ## Generating pods
 

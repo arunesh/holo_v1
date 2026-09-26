@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { usePodStore } from '../state/podStore'
+import { openSocket } from '../api'
 import { applyCommand } from '../engine/affordances'
 import type { Command } from '../types'
 
@@ -29,8 +30,7 @@ export function useSession(podId: string | null, onSpeak: (text: string) => void
 
   useEffect(() => {
     if (!podId) return
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-    const sock = new WebSocket(`${proto}://${location.host}/ws/session/${podId}`)
+    const sock = openSocket(`/ws/session/${encodeURIComponent(podId)}`)
     ws.current = sock
 
     sock.onmessage = async (ev) => {

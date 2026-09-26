@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { signInWithGoogle, googleConfigured, guestAllowed } from '../auth/session'
-import type { SessionUser } from '../auth/session'
+import { fetchAuthConfig, signInAsGuest, signInWithGoogle } from '../auth/session'
+import type { AuthConfig, SessionUser } from '../auth/session'
 import { GoogleIcon, HoloMark } from './icons'
 import './login.css'
 
@@ -11,6 +11,14 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState<{ text: string; error?: boolean } | null>(null)
   const firePulse = useRef<() => void>(() => {})
+  // The server decides whether guests may enter, so the page and the API agree.
+  const [auth, setAuth] = useState<AuthConfig | null>(null)
+  useEffect(() => {
+    fetchAuthConfig().then(setAuth, () =>
+      setNote({ text: 'Could not reach the holodeck. Refresh to try again.', error: true }),
+    )
+  }, [])
+  const guestAllowed = !!auth?.allow_guest
 
   /** Deep links keep their ?lesson=…; a tile picks its own lesson. */
   const openLesson = (lessonId?: string) => {
@@ -22,11 +30,11 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
   }
 
   const onGoogle = async (lessonId?: string) => {
-    if (!googleConfigured) {
+    if (!auth?.google_client_id) {
       setNote({
         text: guestAllowed
-          ? 'Google sign-in needs a client ID on this deployment (VITE_GOOGLE_CLIENT_ID). Guest access opens the same holodeck.'
-          : 'Sign-in is not configured on this deployment (VITE_GOOGLE_CLIENT_ID).',
+          ? 'Google sign-in is not configured on this deployment (HOLODECK_GOOGLE_CLIENT_ID). Guest access opens the same holodeck.'
+          : 'Sign-in is not configured on this deployment (HOLODECK_GOOGLE_CLIENT_ID).',
         error: !guestAllowed,
       })
       return
@@ -35,7 +43,7 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
     setNote(null)
     firePulse.current()
     try {
-      const user = await signInWithGoogle()
+      const user = await signInWithGoogle(auth.google_client_id)
       openLesson(lessonId)
       onSignIn(user)
     } catch {
@@ -48,12 +56,22 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
     }
   }
 
-  const onEnterAsGuest = (lessonId: string) => {
-    openLesson(lessonId)
+  const onEnterAsGuest = async (lessonId: string) => {
     firePulse.current()
     setBusy(true)
-    // let the pulse travel before the scene swap
-    window.setTimeout(() => onSignIn({ name: 'Guest', provider: 'guest' }), 650)
+    setNote(null)
+    try {
+      // let the pulse travel before the scene swap
+      const [user] = await Promise.all([
+        signInAsGuest(),
+        new Promise((resolve) => window.setTimeout(resolve, 650)),
+      ])
+      openLesson(lessonId)
+      onSignIn(user)
+    } catch {
+      setNote({ text: 'Could not start a guest session. Try again.', error: true })
+      setBusy(false)
+    }
   }
 
   return (
@@ -84,7 +102,7 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
           className="session-tile"
           onClick={() => (guestAllowed ? onEnterAsGuest(lesson.id) : onGoogle(lesson.id))}
           onMouseEnter={() => firePulse.current()}
-          disabled={busy}
+          disabled={busy || !auth}
         >
           <span className="session-label">
             <span className="live-dot" />
@@ -114,7 +132,7 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
           className="g-btn"
           onClick={() => onGoogle()}
           onMouseEnter={() => firePulse.current()}
-          disabled={busy}
+          disabled={busy || !auth}
         >
           <GoogleIcon />
           Continue with Google

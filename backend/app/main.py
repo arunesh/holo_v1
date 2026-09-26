@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from .api import generate, inference, pods, session_ws, voice
+from .api import auth, generate, inference, pods, session_ws, voice
+from .auth import RequireSession
 
 app = FastAPI(title="Holodeck", version="0.1.0")
 
@@ -16,6 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_middleware(RequireSession)
+
+app.include_router(auth.router)
 app.include_router(pods.router)
 app.include_router(inference.router)
 app.include_router(voice.router)

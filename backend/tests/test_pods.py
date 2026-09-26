@@ -1,13 +1,8 @@
 """Schema + API smoke tests (no network, no model download)."""
 
-from fastapi.testclient import TestClient
-
-from app.main import app
 from app.schemas.pod import DEFAULT_AFFORDANCES, Pod
 from app.services import pod_store
 from app.services.anthropic_client import _clean_commands, _fallback
-
-client = TestClient(app)
 
 
 def test_gpt2_pod_validates():
@@ -21,21 +16,21 @@ def test_gpt2_pod_validates():
             assert cmd.op in valid_ops
 
 
-def test_list_pods_endpoint():
+def test_list_pods_endpoint(client):
     r = client.get("/api/pods")
     assert r.status_code == 200
     ids = [p["id"] for p in r.json()]
     assert "gpt2" in ids
 
 
-def test_get_pod_endpoint():
+def test_get_pod_endpoint(client):
     r = client.get("/api/pods/gpt2")
     assert r.status_code == 200
     assert r.json()["id"] == "gpt2"
     assert client.get("/api/pods/does-not-exist").status_code == 404
 
 
-def test_voice_status():
+def test_voice_status(client):
     r = client.get("/api/voice/status")
     assert r.status_code == 200
     assert set(r.json().keys()) == {"tts", "stt"}

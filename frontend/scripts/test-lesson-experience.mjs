@@ -12,7 +12,7 @@ function moduleUrl(url) {
     compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext },
   }).outputText
   code = code.replace(
-    /from ['"](.\/.+?)['"]/g,
+    /from ['"](\.\.?\/.+?)['"]/g,
     (_, path) => `from '${moduleUrl(new URL(path + '.ts', url))}'`,
   )
   const result = `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`

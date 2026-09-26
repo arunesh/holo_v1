@@ -22,6 +22,11 @@ class Settings:
     elevenlabs_voice_id: str = os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
     elevenlabs_tts_model: str = os.getenv("ELEVENLABS_TTS_MODEL", "eleven_turbo_v2_5")
     elevenlabs_stt_model: str = os.getenv("ELEVENLABS_STT_MODEL", "scribe_v1")
+    # Sign-in: the Google OAuth web client whose tokens we accept, and our own session tokens.
+    google_client_id: str = os.getenv("HOLODECK_GOOGLE_CLIENT_ID", "")
+    session_secret: str = os.getenv("HOLODECK_SESSION_SECRET", "")
+    session_ttl: int = int(os.getenv("HOLODECK_SESSION_TTL", "3600"))
+    allow_guest: bool = os.getenv("HOLODECK_ALLOW_GUEST", "").lower() == "true"
 
     @property
     def has_anthropic(self) -> bool:
