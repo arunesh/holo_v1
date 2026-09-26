@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from app.schemas.pod import Pod
 from app.lessons.declarative_attention.schema import MemoryScene
-from app.lessons.declarative_attention.tutor import PRESENT_TOOL, respond, validate_result
+from app.lessons.declarative_attention.tutor import PRESENT_TOOL, respond_async, validate_result
 
 PODS = Path(__file__).resolve().parents[1] / "app" / "pods"
 
@@ -93,7 +93,8 @@ def test_tool_schema_is_inline_and_bridge_compatible():
 
 
 def test_no_key_keeps_scene_unchanged(data):
-    result = respond(Pod.model_validate(data), "focus C3", {}, SimpleNamespace(has_anthropic=False))
+    import asyncio
+    result = asyncio.run(respond_async(Pod.model_validate(data), "focus C3", {}, SimpleNamespace(has_anthropic=False)))
     assert result["commands"] == []
     assert "unavailable" in result["narration"]
 

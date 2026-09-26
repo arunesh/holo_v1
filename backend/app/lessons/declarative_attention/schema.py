@@ -64,6 +64,15 @@ class DecodeCommand(StrictModel):
 DACommand = Annotated[StageCommand | ModeCommand | DecodeCommand, Field(discriminator="op")]
 
 
+def validate_focus_chunks(commands, config: MemoryConfig):
+    """Authored beats and tutor replies: focus must name at least one known chunk."""
+    valid_ids = {chunk.id for chunk in config.chunks}
+    for command in commands:
+        if isinstance(command, ModeCommand) and command.args.mode == "focus":
+            if not command.args.chunks or not set(command.args.chunks) <= valid_ids:
+                raise ValueError("Focus requires valid chunk IDs")
+
+
 SpotlightTarget = Annotated[
     str,
     Field(pattern=r"^(gpu|compute|l2|memory|weights|seats|sys|docs|reply|pcie|host|meter|c[1-9][0-9]?)$"),

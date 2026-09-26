@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
-from ..lessons.declarative_attention.schema import MemoryScene, DABeat, ModeCommand
+from ..lessons.declarative_attention.schema import MemoryScene, DABeat, validate_focus_chunks
 from ..lessons.paged_attention.schema import PagedScene, PABeat, validate_request_ids
 
 # The fixed command vocabulary. Authored beats and Claude both speak only these ops.
@@ -87,19 +87,14 @@ class Pod(BaseModel):
 
     @model_validator(mode="after")
     def validate_lesson_commands(self):
-        is_memory = isinstance(self.scene, MemoryScene)
         beat_type = {MemoryScene: DABeat, PagedScene: PABeat}.get(type(self.scene), Beat)
         for beat in self.narration:
             if type(beat) is not beat_type:
                 raise ValueError("Commands must belong to the selected scene type")
             if isinstance(self.scene, PagedScene):
                 validate_request_ids(beat.commands, self.scene.params)
-            if is_memory:
-                valid_ids = {chunk.id for chunk in self.scene.params.chunks}
-                for command in beat.commands:
-                    if isinstance(command, ModeCommand) and command.args.mode == "focus":
-                        if not command.args.chunks or not set(command.args.chunks) <= valid_ids:
-                            raise ValueError("Focus requires valid chunk IDs")
+            if isinstance(self.scene, MemoryScene):
+                validate_focus_chunks(beat.commands, self.scene.params)
         return self
 
 
