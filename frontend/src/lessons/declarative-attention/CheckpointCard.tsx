@@ -1,8 +1,16 @@
 import { useState } from 'react'
-import { CHECKPOINTS } from './checkpoints'
+import { CHECKPOINTS, type Checkpoint } from './checkpoints'
 
-export default function CheckpointCard({ id, onContinue }: { id: string; onContinue: () => void }) {
-  const checkpoint = CHECKPOINTS[id]
+export default function CheckpointCard({
+  id,
+  onContinue,
+  checkpoints = CHECKPOINTS,
+}: {
+  id: string
+  onContinue: () => void
+  checkpoints?: Record<string, Checkpoint>
+}) {
+  const checkpoint = checkpoints[id]
   const [selected, setSelected] = useState<number | null>(null)
   if (!checkpoint) return null
   return (

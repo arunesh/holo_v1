@@ -1,0 +1,47 @@
+/* Shares the DA lesson shell (da-* classes); only pool-specific pieces live here. */
+.pa-svg-token {
+  font:
+    8px 'IBM Plex Mono',
+    monospace;
+  fill: #071b12;
+}
+.pa-svg-block {
+  font:
+    8px 'IBM Plex Mono',
+    monospace;
+  fill: #cfd6e4;
+}
+.pa-usage {
+  display: flex;
+  height: 8px;
+  background: rgba(126, 160, 255, 0.15);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.pa-usage > div {
+  height: 100%;
+  transition: width 0.4s;
+}
+.pa-swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 6px;
+}
+.pa-finish-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.pa-finish-buttons button {
+  font:
+    11px 'IBM Plex Mono',
+    monospace;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pa-usage > div {
+    transition: none;
+  }
+}

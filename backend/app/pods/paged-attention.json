@@ -1,0 +1,755 @@
+{
+  "id": "paged-attention",
+  "title": "PagedAttention",
+  "topic": "kv-cache-memory",
+  "description": "Why LLM servers waste KV cache memory, and how vLLM pages it like an operating system. An interactive simulation of the PagedAttention paper.",
+  "scene": {
+    "type": "paged-kv",
+    "params": {
+      "block_size": 4,
+      "num_blocks": 16,
+      "allocation_order": [
+        7,
+        1,
+        3,
+        5,
+        2,
+        12,
+        9,
+        14,
+        0,
+        10,
+        6,
+        13,
+        4,
+        11,
+        8,
+        15
+      ],
+      "model": {
+        "name": "OPT-13B",
+        "layers": 40,
+        "hidden_size": 5120,
+        "bytes_per_value": 2
+      },
+      "requests": [
+        {
+          "id": "A",
+          "color": "#e7bf63",
+          "max_tokens": 20,
+          "prompt": [
+            "Four",
+            "score",
+            "and",
+            "seven",
+            "years",
+            "ago",
+            "our"
+          ],
+          "outputs": [
+            [
+              "fathers",
+              "brought",
+              "forth",
+              "on",
+              "this"
+            ]
+          ]
+        },
+        {
+          "id": "B",
+          "color": "#47d9c2",
+          "max_tokens": 12,
+          "prompt": [
+            "It",
+            "was",
+            "the",
+            "best",
+            "of",
+            "times"
+          ],
+          "outputs": [
+            [
+              "it",
+              "was"
+            ]
+          ]
+        },
+        {
+          "id": "C",
+          "color": "#e98772",
+          "max_tokens": 20,
+          "prompt": [
+            "You",
+            "only",
+            "live"
+          ],
+          "outputs": [
+            [
+              "once"
+            ]
+          ]
+        },
+        {
+          "id": "D",
+          "color": "#7fa8ff",
+          "max_tokens": 16,
+          "prompt": [
+            "Translate",
+            "to",
+            "French:",
+            "I",
+            "love",
+            "you",
+            "="
+          ],
+          "outputs": [
+            [
+              "Je",
+              "t'aime"
+            ]
+          ]
+        },
+        {
+          "id": "E",
+          "color": "#c49bff",
+          "max_tokens": 16,
+          "prompt": [
+            "The",
+            "future",
+            "of",
+            "AI",
+            "is"
+          ],
+          "outputs": [
+            [
+              "bright",
+              "and",
+              "open"
+            ],
+            [
+              "uncertain",
+              "but",
+              "exciting"
+            ]
+          ]
+        },
+        {
+          "id": "F",
+          "color": "#f07aa0",
+          "max_tokens": 32,
+          "prompt": [
+            "Summarize",
+            "this",
+            "report",
+            "on",
+            "how",
+            "operating",
+            "systems",
+            "split",
+            "memory",
+            "into",
+            "pages",
+            "and",
+            "swap",
+            "them",
+            "to",
+            "disk",
+            "when",
+            "RAM",
+            "runs",
+            "short"
+          ],
+          "outputs": [
+            [
+              "Operating",
+              "systems",
+              "split",
+              "memory",
+              "into",
+              "pages"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "narration": [
+    {
+      "id": "gpu",
+      "title": "A GPU serving many users",
+      "text": "This GPU is serving a chatbot. Requests arrive from many users at once. The more requests it batches together, the more answers it produces per second.",
+      "cues": [
+        {
+          "text": "This GPU is serving a chatbot.",
+          "spotlight": [
+            "gpu"
+          ]
+        },
+        {
+          "text": "Requests arrive from many users at once.",
+          "spotlight": [
+            "host"
+          ]
+        },
+        {
+          "text": "The more requests it batches together, the more answers it produces per second.",
+          "spotlight": [
+            "compute"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paStage",
+          "args": {
+            "stage": "empty"
+          }
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "weights",
+      "title": "Weights take most of memory",
+      "text": "First, the model's weights arrive over PCIe. For a 13-billion-parameter model on a 40-gigabyte A100, they take 26 gigabytes, about 65 percent. They stay put for as long as the server runs.",
+      "cues": [
+        {
+          "text": "First, the model's weights arrive over PCIe.",
+          "spotlight": [
+            "pcie"
+          ]
+        },
+        {
+          "text": "For a 13-billion-parameter model on a 40-gigabyte A100, they take 26 gigabytes, about 65 percent.",
+          "spotlight": [
+            "weights"
+          ]
+        },
+        {
+          "text": "They stay put for as long as the server runs.",
+          "spotlight": [
+            "weights"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paStage",
+          "args": {
+            "stage": "weights"
+          }
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "kv",
+      "title": "The KV cache",
+      "text": "Most of what's left holds the KV cache. Every token a request has seen leaves behind keys and values that later tokens attend to. For OPT-13B that's 800 kilobytes per token, so one 2,048-token request can need 1.6 gigabytes. Here, each square is one token's slot.",
+      "cues": [
+        {
+          "text": "Most of what's left holds the KV cache.",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "Every token a request has seen leaves behind keys and values that later tokens attend to.",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "For OPT-13B that's 800 kilobytes per token, so one 2,048-token request can need 1.6 gigabytes.",
+          "spotlight": [
+            "meter"
+          ]
+        },
+        {
+          "text": "Here, each square is one token's slot.",
+          "spotlight": [
+            "pool"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paStage",
+          "args": {
+            "stage": "pool"
+          }
+        },
+        {
+          "op": "paMode",
+          "args": {
+            "mode": "contiguous"
+          }
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "contiguous",
+      "title": "The old way: reserve the maximum",
+      "text": "Before vLLM, serving systems gave each request one contiguous chunk of memory, sized for the longest answer it might ever write. Request A reserves 20 slots, and B reserves 12.",
+      "cues": [
+        {
+          "text": "Before vLLM, serving systems gave each request one contiguous chunk of memory,",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "sized for the longest answer it might ever write.",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "Request A reserves 20 slots, and B reserves 12.",
+          "spotlight": [
+            "r-A",
+            "r-B"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "A"
+          }
+        },
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "B"
+          }
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "decode",
+      "title": "One token per step",
+      "text": "Each decoding step writes one new token for every running request. The rest of each chunk sits empty, held for tokens that don't exist yet.",
+      "cues": [
+        {
+          "text": "Each decoding step writes one new token for every running request.",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "The rest of each chunk sits empty, held for tokens that don't exist yet.",
+          "spotlight": [
+            "r-A",
+            "r-B"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paDecode",
+          "args": {}
+        },
+        {
+          "op": "paDecode",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "waste",
+      "title": "Three kinds of waste",
+      "text": "Reserved slots wait for tokens that will come later. Internal fragmentation never gets used at all. C reserved 20 slots but will only write four. When B finishes, it leaves a gap. That's external fragmentation: 24 slots are free, but not 16 in a row, so D has to wait.",
+      "cues": [
+        {
+          "text": "Reserved slots wait for tokens that will come later.",
+          "spotlight": [
+            "r-A"
+          ]
+        },
+        {
+          "text": "Internal fragmentation never gets used at all. C reserved 20 slots but will only write four.",
+          "spotlight": [
+            "r-C"
+          ]
+        },
+        {
+          "text": "When B finishes, it leaves a gap.",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "That's external fragmentation: 24 slots are free, but not 16 in a row, so D has to wait.",
+          "spotlight": [
+            "queue"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "C"
+          }
+        },
+        {
+          "op": "paFinish",
+          "args": {
+            "request": "B"
+          }
+        },
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "D"
+          }
+        }
+      ],
+      "hold_ms": 1100,
+      "checkpoint": "waste"
+    },
+    {
+      "id": "measured",
+      "title": "Only 20 to 38 percent used",
+      "text": "Measured on real traffic, these systems used only 20.4 to 38.2 percent of KV memory for actual tokens. Fewer requests fit, so batches stay small and the GPU sits underused.",
+      "cues": [
+        {
+          "text": "Measured on real traffic, these systems used only 20.4 to 38.2 percent of KV memory for actual tokens.",
+          "spotlight": [
+            "meter"
+          ]
+        },
+        {
+          "text": "Fewer requests fit, so batches stay small and the GPU sits underused.",
+          "spotlight": [
+            "compute"
+          ]
+        }
+      ],
+      "commands": [],
+      "hold_ms": 1000
+    },
+    {
+      "id": "paged",
+      "title": "Pages, like an operating system",
+      "text": "PagedAttention borrows an idea from operating systems: virtual memory and paging. The KV cache is split into fixed-size blocks, here 4 tokens each. A's seven prompt tokens fill two blocks: physical blocks 7 and 1. They don't have to sit next to each other.",
+      "cues": [
+        {
+          "text": "PagedAttention borrows an idea from operating systems: virtual memory and paging.",
+          "spotlight": []
+        },
+        {
+          "text": "The KV cache is split into fixed-size blocks, here 4 tokens each.",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "A's seven prompt tokens fill two blocks: physical blocks 7 and 1.",
+          "spotlight": [
+            "r-A"
+          ]
+        },
+        {
+          "text": "They don't have to sit next to each other.",
+          "spotlight": [
+            "r-A"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paStage",
+          "args": {
+            "stage": "pool"
+          }
+        },
+        {
+          "op": "paMode",
+          "args": {
+            "mode": "paged"
+          }
+        },
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "A"
+          }
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "table",
+      "title": "The block table",
+      "text": "A block table maps A's logical blocks to physical ones, and counts the filled slots. The new token, fathers, takes the last free slot in block 1.",
+      "cues": [
+        {
+          "text": "A block table maps A's logical blocks to physical ones, and counts the filled slots.",
+          "spotlight": [
+            "tables"
+          ]
+        },
+        {
+          "text": "The new token, fathers, takes the last free slot in block 1.",
+          "spotlight": [
+            "r-A"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paDecode",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1000,
+      "checkpoint": "next-block"
+    },
+    {
+      "id": "allocate",
+      "title": "Allocate on demand",
+      "text": "Block 1 is full, so the next token, brought, gets a fresh block: physical block 3. Memory is claimed only when it's needed, so a sequence wastes at most part of one block.",
+      "cues": [
+        {
+          "text": "Block 1 is full, so the next token, brought, gets a fresh block: physical block 3.",
+          "spotlight": [
+            "r-A"
+          ]
+        },
+        {
+          "text": "Memory is claimed only when it's needed, so a sequence wastes at most part of one block.",
+          "spotlight": [
+            "pool"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paDecode",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "batch",
+      "title": "Everyone fits",
+      "text": "Now B, C and D arrive. Their blocks land wherever blocks are free. Any free block works for anyone. Nothing is reserved ahead, and there are no gaps too small to use.",
+      "cues": [
+        {
+          "text": "Now B, C and D arrive.",
+          "spotlight": [
+            "queue"
+          ]
+        },
+        {
+          "text": "Their blocks land wherever blocks are free. Any free block works for anyone.",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "Nothing is reserved ahead, and there are no gaps too small to use.",
+          "spotlight": [
+            "meter"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "B"
+          }
+        },
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "C"
+          }
+        },
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "D"
+          }
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "share",
+      "title": "Sharing a prompt",
+      "text": "Request E asks for two different answers to the same prompt. Both samples map their prompt to the same physical blocks, so each block's reference count is 2. Contiguous chunks can't share like this; each sample needs its own copy.",
+      "cues": [
+        {
+          "text": "Request E asks for two different answers to the same prompt.",
+          "spotlight": [
+            "queue"
+          ]
+        },
+        {
+          "text": "Both samples map their prompt to the same physical blocks, so each block's reference count is 2.",
+          "spotlight": [
+            "r-E"
+          ]
+        },
+        {
+          "text": "Contiguous chunks can't share like this; each sample needs its own copy.",
+          "spotlight": [
+            "r-E"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "E"
+          }
+        }
+      ],
+      "hold_ms": 1000,
+      "checkpoint": "cow"
+    },
+    {
+      "id": "cow",
+      "title": "Copy-on-write",
+      "text": "When E1 writes into the shared last block, vLLM first copies that one block for it. That's copy-on-write. E2 then writes in place, because the block is no longer shared. Beam search shares even more; the paper saved 37 to 66 percent of KV memory there.",
+      "cues": [
+        {
+          "text": "When E1 writes into the shared last block, vLLM first copies that one block for it.",
+          "spotlight": [
+            "r-E"
+          ]
+        },
+        {
+          "text": "That's copy-on-write. E2 then writes in place, because the block is no longer shared.",
+          "spotlight": [
+            "r-E"
+          ]
+        },
+        {
+          "text": "Beam search shares even more; the paper saved 37 to 66 percent of KV memory there.",
+          "spotlight": [
+            "meter"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paDecode",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "preempt",
+      "title": "Out of blocks",
+      "text": "F brings a long prompt and takes the last free blocks. On the next step, D needs a new block, and none are left. vLLM preempts the latest arrival, F, all or nothing, and swaps its blocks out to CPU memory over PCIe.",
+      "cues": [
+        {
+          "text": "F brings a long prompt and takes the last free blocks.",
+          "spotlight": [
+            "r-F"
+          ]
+        },
+        {
+          "text": "On the next step, D needs a new block, and none are left.",
+          "spotlight": [
+            "r-D"
+          ]
+        },
+        {
+          "text": "vLLM preempts the latest arrival, F, all or nothing, and swaps its blocks out to CPU memory over PCIe.",
+          "spotlight": [
+            "pcie",
+            "swap"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "paAdmit",
+          "args": {
+            "request": "F"
+          }
+        },
+        {
+          "op": "paDecode",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "resume",
+      "title": "Swapping back in",
+      "text": "C finishes, and its block is freed. Now F fits again. It swaps back in and carries on where it stopped. Instead of swapping, vLLM can also drop evicted blocks and recompute them later.",
+      "cues": [
+        {
+          "text": "C finishes, and its block is freed.",
+          "spotlight": [
+            "pool"
+          ]
+        },
+        {
+          "text": "Now F fits again. It swaps back in and carries on where it stopped.",
+          "spotlight": [
+            "r-F"
+          ]
+        },
+        {
+          "text": "Instead of swapping, vLLM can also drop evicted blocks and recompute them later.",
+          "spotlight": []
+        }
+      ],
+      "commands": [
+        {
+          "op": "paFinish",
+          "args": {
+            "request": "C"
+          }
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "result",
+      "title": "The result",
+      "text": "With paging, vLLM filled 96.3 percent of its KV memory with real tokens, versus 20 to 38 percent before. It batched over twice as many requests, for 2 to 4 times the throughput of FasterTransformer and Orca at the same latency. The cost: attention kernels run 20 to 26 percent slower, looking up the block table. A small price for the whole system.",
+      "cues": [
+        {
+          "text": "With paging, vLLM filled 96.3 percent of its KV memory with real tokens, versus 20 to 38 percent before.",
+          "spotlight": [
+            "meter"
+          ]
+        },
+        {
+          "text": "It batched over twice as many requests, for 2 to 4 times the throughput of FasterTransformer and Orca at the same latency.",
+          "spotlight": [
+            "compute"
+          ]
+        },
+        {
+          "text": "The cost: attention kernels run 20 to 26 percent slower, looking up the block table. A small price for the whole system.",
+          "spotlight": [
+            "tables"
+          ]
+        }
+      ],
+      "commands": [],
+      "hold_ms": 1300,
+      "emphasis": true
+    }
+  ],
+  "affordances": []
+}

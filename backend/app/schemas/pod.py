@@ -12,6 +12,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 from ..lessons.declarative_attention.schema import MemoryScene, DABeat, ModeCommand
+from ..lessons.paged_attention.schema import PagedScene, PABeat, validate_request_ids
 
 # The fixed command vocabulary. Authored beats and Claude both speak only these ops.
 AffordanceOp = Literal[
@@ -67,8 +68,8 @@ class Pod(BaseModel):
     title: str
     topic: str
     description: str
-    scene: PodScene | MemoryScene = Field(default_factory=PodScene)
-    narration: list[Beat | DABeat] = Field(default_factory=list)
+    scene: PodScene | MemoryScene | PagedScene = Field(default_factory=PodScene)
+    narration: list[Beat | DABeat | PABeat] = Field(default_factory=list)
     affordances: list[AffordanceDef] = Field(default_factory=list)
 
     @model_validator(mode="before")
@@ -80,16 +81,19 @@ class Pod(BaseModel):
             return data
         scene = data.get("scene")
         scene_type = scene.get("type") if isinstance(scene, dict) else getattr(scene, "type", "transformer")
-        model = DABeat if scene_type == "gpu-memory" else Beat
+        model = {"gpu-memory": DABeat, "paged-kv": PABeat}.get(scene_type, Beat)
         narration = [model.model_validate(beat) if isinstance(beat, dict) else beat for beat in data["narration"]]
         return {**data, "narration": narration}
 
     @model_validator(mode="after")
     def validate_lesson_commands(self):
         is_memory = isinstance(self.scene, MemoryScene)
+        beat_type = {MemoryScene: DABeat, PagedScene: PABeat}.get(type(self.scene), Beat)
         for beat in self.narration:
-            if isinstance(beat, DABeat) != is_memory:
+            if type(beat) is not beat_type:
                 raise ValueError("Commands must belong to the selected scene type")
+            if isinstance(self.scene, PagedScene):
+                validate_request_ids(beat.commands, self.scene.params)
             if is_memory:
                 valid_ids = {chunk.id for chunk in self.scene.params.chunks}
                 for command in beat.commands:

@@ -1,4 +1,4 @@
-"""One DA query per socket. Disconnect cancels queued or in-flight HTTP work."""
+"""One lesson-tutor query per socket. Disconnect cancels queued or in-flight HTTP work."""
 import asyncio
 from contextlib import suppress
 from ...config import get_settings
@@ -7,9 +7,9 @@ from .tutor import respond_async
 _capacity = asyncio.Semaphore(2)
 
 
-async def answer(pod, query, scene):
+async def answer(pod, query, scene, respond=respond_async):
     async with _capacity:
-        return await respond_async(pod, query, scene, get_settings())
+        return await respond(pod, query, scene, get_settings())
 
 
 async def wait_for_disconnect(ws):
@@ -18,7 +18,7 @@ async def wait_for_disconnect(ws):
         pass
 
 
-async def memory_session(ws, pod):
+async def memory_session(ws, pod, respond=respond_async):
     message = await ws.receive_json()
     query = message.get("query", "")
     if not isinstance(query, str) or not query.strip() or len(query) > 4000:
@@ -26,7 +26,7 @@ async def memory_session(ws, pod):
         await ws.close()
         return
     await ws.send_json({"type": "thinking"})
-    work = asyncio.create_task(answer(pod, query.strip(), message.get("scene", {})))
+    work = asyncio.create_task(answer(pod, query.strip(), message.get("scene", {}), respond))
     disconnected = asyncio.create_task(wait_for_disconnect(ws))
     try:
         done, _ = await asyncio.wait({work, disconnected}, return_when=asyncio.FIRST_COMPLETED)
