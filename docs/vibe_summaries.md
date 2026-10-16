@@ -1,3 +1,67 @@
+⏺ The API is now locked down on prod. Every /api/* call and tutor socket needs a session token that the server checks. It's live as 430c91e.
+
+  How it works
+  1. You sign in with Google through the same popup as before.
+  2. The server asks Google whether that token was issued to our client ID for a verified email. A Google token issued to any other app is refused.
+  3. The server then issues our own signed token, valid for 1 hour, which the open tab renews on its own.
+
+  Health, the login page and the sign-in endpoints stay open. Sockets send the token in a WebSocket header rather than the URL, so it doesn't end up in logs.
+
+  Guest flag: it moved to the server as HOLODECK_ALLOW_GUEST, off on prod. The login page reads it from the server, so the page and the API can't disagree. The VITE_ALLOW_GUEST build flag from the last change is gone. frontend/.env.local is no longer tracked, because the client
+  ID now comes from the server.
+
+  Prod setup: I added HOLODECK_GOOGLE_CLIENT_ID (copied from the old frontend file) and a newly generated HOLODECK_SESSION_SECRET to botmc's .env. The previous .env is backed up next to it as .env.bak-20260926-170157, and I set both files to owner-only permissions.
+
+  Checked on the live site:
+  - API calls with no token or a fake token get 401, including text-to-speech.
+  - A socket with a fake token is rejected.
+  - Guest sign-in returns 403.
+  - The page shows the login with the Google button and no guest option.
+  - No errors in the logs, and no missing-secret warning, so the secret loaded.
+
+  Tests: 73 backend tests pass, 16 of them new auth tests with Google faked. In a local browser run with a 20-second token lifetime:
+  - An old-format session was sent back to login.
+  - A guest entered and the tutor socket accepted the token.
+  - The token renewed on its own, and API calls kept working after renewal.
+  - A forged token sent the browser back to login.
+
+  The spatial test passed 14/14 through real sign-in, and test:da and test:pa pass.
+
+  Please sign in once now. A real Google sign-in through the new server check is the one step I couldn't test, because the headless browser blocks Google's popup. Everyone, including you, was signed out by this deploy, since older sessions have no server token.
+
+  If it fails, you can get back in with guest access:
+  cd ~/holodeck/holo_v1 && echo "HOLODECK_ALLOW_GUEST=true" >> .env && export PATH="$HOME/.local/node/bin:$PATH" && ./scripts/prod.sh --skip-build
+  Then send me the error. The most likely cause would be Google's check rejecting the token, and I'd want to look at its actual response.
+
+  Two limits:
+  1. Any Google account can sign in. I can add an allow-list of emails or domains if it should be just you or your team.
+  2. After an hour with no tab open, you'll need to sign in again. That's normally a single click in Google's popup.
+
+
+------------------------------------------------------------------------------------------------------------------------
+⏺ Sign-in is now required on the portal, and the new login plus the earlier fixes are live on https://myholodeck.app as de3625f.
+
+  How login works now:
+  - Sign-in required by default. The guest option is gone from the login page. The build compiled the guest code out entirely: the live bundle has no guest wording and no "Grok" text.
+  - Guest access behind a flag. Setting VITE_ALLOW_GUEST=true in frontend/.env.local before building brings the guest route back. Prod doesn't set it. The README documents both variables.
+  - Old guest sessions are rejected. Anyone still holding a guest session from before is sent back to the login page.
+  - Lesson tiles start Google sign-in and then open the lesson you clicked. Links like ?lesson=paged-attention still open that lesson after sign-in.
+  - PagedAttention has a tile on the portal now; it was missing before.
+
+  Testing:
+  - I checked both builds in headless Chrome:
+    - Default: no guest option, a saved guest session gets the login page, a saved Google session opens the app.
+    - With the flag: the guest tile enters the chosen lesson.
+  - The spatial test (14/14) now signs in with a saved session instead of the guest tile. test:da and test:pa pass.
+  - Not tested: a real Google sign-in, because the headless browser blocks the Google popup. Please sign in once on the site to confirm, since you're now the only way in.
+
+  Two things to know:
+  1. The login protects the pages, not the API. Sign-in is still checked only in the browser: the backend never sees it, /api/* and the tutor socket stay open, and anyone can fake a saved session. If you need real protection, the next step is sending Google's ID token to
+     FastAPI and checking it on every request and socket. I can build that if you want.
+  2. If sign-in fails on the live site, check that https://myholodeck.app is listed as an allowed JavaScript origin on the OAuth client in the Google Cloud console.
+
+
+------------------------------------------------------------------------------------------------------------------------
 ⏺ All eight findings are fixed and pushed to main as three commits, 07f925f, 51423b5 and 17abd2f. Nothing is deployed yet, so prod is still on the lesson release.
 
   Fixes (07f925f)
