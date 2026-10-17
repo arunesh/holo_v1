@@ -6,6 +6,7 @@
   "scripts": {
     "test:da": "node scripts/test-declarative-attention.mjs && node --test scripts/test-lesson-experience.mjs",
     "test:pa": "node --test scripts/test-paged-attention.mjs",
+    "test:fa": "node --test scripts/test-flash-attention.mjs",
     "test:spatial": "node scripts/test-spatial-interaction.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",

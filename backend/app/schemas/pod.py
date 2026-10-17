@@ -13,6 +13,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, model_validator
 from ..lessons.declarative_attention.schema import MemoryScene, DABeat, validate_focus_chunks
 from ..lessons.paged_attention.schema import PagedScene, PABeat, validate_request_ids
+from ..lessons.flash_attention.schema import FlashScene, FABeat
 
 # The fixed command vocabulary. Authored beats and Claude both speak only these ops.
 AffordanceOp = Literal[
@@ -68,8 +69,8 @@ class Pod(BaseModel):
     title: str
     topic: str
     description: str
-    scene: PodScene | MemoryScene | PagedScene = Field(default_factory=PodScene)
-    narration: list[Beat | DABeat | PABeat] = Field(default_factory=list)
+    scene: PodScene | MemoryScene | PagedScene | FlashScene = Field(default_factory=PodScene)
+    narration: list[Beat | DABeat | PABeat | FABeat] = Field(default_factory=list)
     affordances: list[AffordanceDef] = Field(default_factory=list)
 
     @model_validator(mode="before")
@@ -81,13 +82,13 @@ class Pod(BaseModel):
             return data
         scene = data.get("scene")
         scene_type = scene.get("type") if isinstance(scene, dict) else getattr(scene, "type", "transformer")
-        model = {"gpu-memory": DABeat, "paged-kv": PABeat}.get(scene_type, Beat)
+        model = {"gpu-memory": DABeat, "paged-kv": PABeat, "flash-tiles": FABeat}.get(scene_type, Beat)
         narration = [model.model_validate(beat) if isinstance(beat, dict) else beat for beat in data["narration"]]
         return {**data, "narration": narration}
 
     @model_validator(mode="after")
     def validate_lesson_commands(self):
-        beat_type = {MemoryScene: DABeat, PagedScene: PABeat}.get(type(self.scene), Beat)
+        beat_type = {MemoryScene: DABeat, PagedScene: PABeat, FlashScene: FABeat}.get(type(self.scene), Beat)
         for beat in self.narration:
             if type(beat) is not beat_type:
                 raise ValueError("Commands must belong to the selected scene type")

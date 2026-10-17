@@ -32,6 +32,11 @@ async def session(ws: WebSocket, pod_id: str):
             from ..lessons.paged_attention.tutor import respond_async
             await memory_session(ws, pod, respond_async)
             return
+        if pod.scene.type == "flash-tiles":
+            from ..lessons.declarative_attention.session import memory_session
+            from ..lessons.flash_attention.tutor import respond_async
+            await memory_session(ws, pod, respond_async)
+            return
         while True:
             msg = await ws.receive_json()
             query = (msg.get("query") or "").strip()

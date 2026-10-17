@@ -1,0 +1,668 @@
+{
+  "id": "flash-attention",
+  "title": "FlashAttention",
+  "topic": "io-aware-attention",
+  "description": "Why attention is limited by memory traffic, and how FlashAttention tiles the matmuls through on-chip SRAM to compute exact attention without writing the N × N matrix to HBM. Includes block-sparse FlashAttention.",
+  "scene": {
+    "type": "flash-tiles",
+    "params": {
+      "seq_len": 32,
+      "head_dim": 4,
+      "sram_size": 128,
+      "seed": 4,
+      "block_mask": [
+        [
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ]
+    }
+  },
+  "narration": [
+    {
+      "id": "hierarchy",
+      "title": "Memory, not math",
+      "text": "Attention runs on a GPU with two kinds of memory. HBM is large, 40 gigabytes on an A100, but moves data at about 1.5 terabytes per second. On-chip SRAM is tiny, 192 kilobytes per streaming multiprocessor, but roughly 19 terabytes per second. Every number must cross this bus before it can be used. For attention, that crossing is the slow part.",
+      "cues": [
+        {
+          "text": "Attention runs on a GPU with two kinds of memory.",
+          "spotlight": [
+            "gpu"
+          ]
+        },
+        {
+          "text": "HBM is large, 40 gigabytes on an A100, but moves data at about 1.5 terabytes per second.",
+          "spotlight": [
+            "hbm"
+          ]
+        },
+        {
+          "text": "On-chip SRAM is tiny, 192 kilobytes per streaming multiprocessor, but roughly 19 terabytes per second.",
+          "spotlight": [
+            "sram"
+          ]
+        },
+        {
+          "text": "Every number must cross this bus before it can be used. For attention, that crossing is the slow part.",
+          "spotlight": [
+            "bus"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faStage",
+          "args": {
+            "stage": "hardware"
+          }
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "inputs",
+      "title": "Q, K and V live in HBM",
+      "text": "Attention starts from three matrices in HBM: queries, keys and values, one row per token. This toy has 32 tokens with 4 numbers each. GPT-2 uses 1,024 tokens and 64 numbers per head. The goal is O: softmax of Q times K-transpose, times V.",
+      "cues": [
+        {
+          "text": "Attention starts from three matrices in HBM: queries, keys and values, one row per token.",
+          "spotlight": [
+            "q",
+            "k",
+            "v"
+          ]
+        },
+        {
+          "text": "This toy has 32 tokens with 4 numbers each. GPT-2 uses 1,024 tokens and 64 numbers per head.",
+          "spotlight": [
+            "hbm"
+          ]
+        },
+        {
+          "text": "The goal is O: softmax of Q times K-transpose, times V.",
+          "spotlight": [
+            "o"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faStage",
+          "args": {
+            "stage": "inputs"
+          }
+        },
+        {
+          "op": "faMode",
+          "args": {
+            "mode": "standard"
+          }
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "standard-qk",
+      "title": "Kernel 1: S = QKᵀ",
+      "text": "The standard implementation runs three separate kernels. The first multiplies Q by K-transpose, one block of queries at a time, and writes every score back to HBM. S is N by N. At 1,024 tokens, that is over a million scores per head.",
+      "cues": [
+        {
+          "text": "The standard implementation runs three separate kernels.",
+          "spotlight": [
+            "gpu"
+          ]
+        },
+        {
+          "text": "The first multiplies Q by K-transpose, one block of queries at a time, and writes every score back to HBM.",
+          "spotlight": [
+            "scores"
+          ]
+        },
+        {
+          "text": "S is N by N. At 1,024 tokens, that is over a million scores per head.",
+          "spotlight": [
+            "scores"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faRun",
+          "args": {
+            "until": "pass"
+          }
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "standard-softmax",
+      "title": "Kernel 2: read S, write P",
+      "text": "The second kernel reads all of S back, takes a softmax along each row, and writes P, another N by N matrix. Softmax barely does any arithmetic. Its time goes to waiting on memory.",
+      "cues": [
+        {
+          "text": "The second kernel reads all of S back, takes a softmax along each row, and writes P, another N by N matrix.",
+          "spotlight": [
+            "scores",
+            "bus"
+          ]
+        },
+        {
+          "text": "Softmax barely does any arithmetic. Its time goes to waiting on memory.",
+          "spotlight": [
+            "bus"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faRun",
+          "args": {
+            "until": "pass"
+          }
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "standard-pv",
+      "title": "Kernel 3: read P again",
+      "text": "The third kernel reads P and V, and finally writes O. In total, 4,608 numbers crossed the bus, and 4,096 of them were S or P going out and coming back.",
+      "cues": [
+        {
+          "text": "The third kernel reads P and V, and finally writes O.",
+          "spotlight": [
+            "o"
+          ]
+        },
+        {
+          "text": "In total, 4,608 numbers crossed the bus, and 4,096 of them were S or P going out and coming back.",
+          "spotlight": [
+            "meter"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faRun",
+          "args": {
+            "until": "pass"
+          }
+        }
+      ],
+      "hold_ms": 1100,
+      "checkpoint": "materialize"
+    },
+    {
+      "id": "tiling",
+      "title": "FlashAttention: never write S",
+      "text": "FlashAttention computes exactly the same O, but never writes S or P to HBM. It cuts Q, K and V into tiles small enough for SRAM, and fuses every step into one kernel. The tile sizes come from the SRAM size. With room for 128 numbers, key blocks get 8 rows and query blocks get 4.",
+      "cues": [
+        {
+          "text": "FlashAttention computes exactly the same O, but never writes S or P to HBM.",
+          "spotlight": [
+            "scores"
+          ]
+        },
+        {
+          "text": "It cuts Q, K and V into tiles small enough for SRAM, and fuses every step into one kernel.",
+          "spotlight": [
+            "sram"
+          ]
+        },
+        {
+          "text": "The tile sizes come from the SRAM size. With room for 128 numbers, key blocks get 8 rows and query blocks get 4.",
+          "spotlight": [
+            "tile"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faMode",
+          "args": {
+            "mode": "flash"
+          }
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "load-kv",
+      "title": "Outer loop: a K, V block",
+      "text": "The outer loop walks over blocks of keys and values. The first K and V blocks are loaded into SRAM once, and stay there for the whole inner loop.",
+      "cues": [
+        {
+          "text": "The outer loop walks over blocks of keys and values.",
+          "spotlight": [
+            "k",
+            "v"
+          ]
+        },
+        {
+          "text": "The first K and V blocks are loaded into SRAM once, and stay there for the whole inner loop.",
+          "spotlight": [
+            "sram"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faStep",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "load-q",
+      "title": "Inner loop: a Q block",
+      "text": "The inner loop walks over blocks of queries. The first Q block comes in, with its rows of the output O and two running statistics per row: the max m and the sum l.",
+      "cues": [
+        {
+          "text": "The inner loop walks over blocks of queries.",
+          "spotlight": [
+            "q"
+          ]
+        },
+        {
+          "text": "The first Q block comes in, with its rows of the output O and two running statistics per row: the max m and the sum l.",
+          "spotlight": [
+            "o",
+            "stats"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faStep",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "qk",
+      "title": "The tile matmul",
+      "text": "On chip, this Q block times the K block, transposed, gives a 4 by 8 tile of scores. That tile is the only piece of S that ever exists, and it never leaves SRAM.",
+      "cues": [
+        {
+          "text": "On chip, this Q block times the K block, transposed, gives a 4 by 8 tile of scores.",
+          "spotlight": [
+            "tile"
+          ]
+        },
+        {
+          "text": "That tile is the only piece of S that ever exists, and it never leaves SRAM.",
+          "spotlight": [
+            "tile",
+            "scores"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faStep",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "softmax",
+      "title": "Softmax, one tile at a time",
+      "text": "Softmax needs each row's maximum and total, but this tile has seen only 8 of the 32 keys. So it takes the tile's own row max and row sum, exponentiates the scores against that max, and merges both into the running m and l.",
+      "cues": [
+        {
+          "text": "Softmax needs each row's maximum and total, but this tile has seen only 8 of the 32 keys.",
+          "spotlight": [
+            "tile"
+          ]
+        },
+        {
+          "text": "So it takes the tile's own row max and row sum, exponentiates the scores against that max, and merges both into the running m and l.",
+          "spotlight": [
+            "stats"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faStep",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "write-back",
+      "title": "Multiply by V, write back",
+      "text": "The tile's weights times the V block update this block of O, right in SRAM. Then O, m and l go back to HBM: 24 numbers out, and not a single score.",
+      "cues": [
+        {
+          "text": "The tile's weights times the V block update this block of O, right in SRAM.",
+          "spotlight": [
+            "o",
+            "v"
+          ]
+        },
+        {
+          "text": "Then O, m and l go back to HBM: 24 numbers out, and not a single score.",
+          "spotlight": [
+            "o",
+            "stats",
+            "bus"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faStep",
+          "args": {}
+        },
+        {
+          "op": "faStep",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "first-pass",
+      "title": "Finish the first K, V block",
+      "text": "The same steps repeat for every query block, while the first K and V blocks stay in SRAM. Each block of O now holds a partial answer, built from only the first 8 keys.",
+      "cues": [
+        {
+          "text": "The same steps repeat for every query block, while the first K and V blocks stay in SRAM.",
+          "spotlight": [
+            "sram"
+          ]
+        },
+        {
+          "text": "Each block of O now holds a partial answer, built from only the first 8 keys.",
+          "spotlight": [
+            "o"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faRun",
+          "args": {
+            "until": "pass"
+          }
+        }
+      ],
+      "hold_ms": 1100,
+      "checkpoint": "rescale"
+    },
+    {
+      "id": "rescale",
+      "title": "When the max changes",
+      "text": "Now the second K and V blocks arrive, and the first Q block comes back for its second pass. In its first row, the best score so far was about 1.2. This tile holds a 3.5. So that row's max rises, and its output so far is multiplied by e to the old max minus the new max: about 0.09. The sum l is corrected the same way. The other rows keep their max, so they're untouched. Nothing earlier is reloaded, and the result stays exact.",
+      "cues": [
+        {
+          "text": "Now the second K and V blocks arrive, and the first Q block comes back for its second pass.",
+          "spotlight": [
+            "k",
+            "v",
+            "q"
+          ]
+        },
+        {
+          "text": "In its first row, the best score so far was about 1.2. This tile holds a 3.5.",
+          "spotlight": [
+            "tile",
+            "stats"
+          ]
+        },
+        {
+          "text": "So that row's max rises, and its output so far is multiplied by e to the old max minus the new max: about 0.09. The sum l is corrected the same way.",
+          "spotlight": [
+            "o",
+            "stats"
+          ]
+        },
+        {
+          "text": "The other rows keep their max, so they're untouched. Nothing earlier is reloaded, and the result stays exact.",
+          "spotlight": [
+            "stats"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faStep",
+          "args": {}
+        },
+        {
+          "op": "faStep",
+          "args": {}
+        },
+        {
+          "op": "faStep",
+          "args": {}
+        },
+        {
+          "op": "faStep",
+          "args": {}
+        }
+      ],
+      "hold_ms": 1200
+    },
+    {
+      "id": "flash-done",
+      "title": "Exact, with half the traffic",
+      "text": "Running every remaining tile gives the same O as standard attention, down to rounding error. It moved 2,304 numbers instead of 4,608, and no N by N matrix ever touched HBM. This toy SRAM holds only 128 numbers. A real one holds about 100 kilobytes, so tiles are far bigger and passes far fewer. On GPT-2 medium, the paper measured attention's HBM traffic falling from 40.3 to 4.4 gigabytes, and its runtime from 41.7 to 7.3 milliseconds.",
+      "cues": [
+        {
+          "text": "Running every remaining tile gives the same O as standard attention, down to rounding error.",
+          "spotlight": [
+            "o"
+          ]
+        },
+        {
+          "text": "It moved 2,304 numbers instead of 4,608, and no N by N matrix ever touched HBM.",
+          "spotlight": [
+            "meter"
+          ]
+        },
+        {
+          "text": "This toy SRAM holds only 128 numbers. A real one holds about 100 kilobytes, so tiles are far bigger and passes far fewer.",
+          "spotlight": [
+            "sram"
+          ]
+        },
+        {
+          "text": "On GPT-2 medium, the paper measured attention's HBM traffic falling from 40.3 to 4.4 gigabytes, and its runtime from 41.7 to 7.3 milliseconds.",
+          "spotlight": [
+            "meter"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faRun",
+          "args": {
+            "until": "end"
+          }
+        }
+      ],
+      "hold_ms": 1200
+    },
+    {
+      "id": "block-sparse",
+      "title": "Block-sparse: skip whole tiles",
+      "text": "Block-sparse FlashAttention adds a mask over tiles. Where the mask is zero, every score in the tile counts as minus infinity, so the tile is skipped: no Q load, no matmul, no write. Here half the tiles are zero. Each query block keeps its nearby keys plus one partner, in the spirit of the paper's butterfly pattern.",
+      "cues": [
+        {
+          "text": "Block-sparse FlashAttention adds a mask over tiles.",
+          "spotlight": [
+            "scores"
+          ]
+        },
+        {
+          "text": "Where the mask is zero, every score in the tile counts as minus infinity, so the tile is skipped: no Q load, no matmul, no write.",
+          "spotlight": [
+            "scores",
+            "tile"
+          ]
+        },
+        {
+          "text": "Here half the tiles are zero. Each query block keeps its nearby keys plus one partner, in the spirit of the paper's butterfly pattern.",
+          "spotlight": [
+            "scores"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faMode",
+          "args": {
+            "mode": "block-sparse"
+          }
+        }
+      ],
+      "hold_ms": 1100,
+      "checkpoint": "sparse"
+    },
+    {
+      "id": "sparse-pass",
+      "title": "Skipping zero tiles",
+      "text": "The first K and V blocks are still loaded once. But only query blocks with a nonzero tile come in. The rest are skipped without touching memory.",
+      "cues": [
+        {
+          "text": "The first K and V blocks are still loaded once.",
+          "spotlight": [
+            "k",
+            "v"
+          ]
+        },
+        {
+          "text": "But only query blocks with a nonzero tile come in. The rest are skipped without touching memory.",
+          "spotlight": [
+            "q",
+            "scores"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faRun",
+          "args": {
+            "until": "pass"
+          }
+        }
+      ],
+      "hold_ms": 1000
+    },
+    {
+      "id": "sparse-done",
+      "title": "Exact for the mask",
+      "text": "The full run moved 1,280 numbers, against 2,304 for dense FlashAttention. Not quite half, because every K and V block is still read once. That N times d term is what sparsity can't remove. The output is exactly attention with this mask, and only an approximation of dense attention.",
+      "cues": [
+        {
+          "text": "The full run moved 1,280 numbers, against 2,304 for dense FlashAttention.",
+          "spotlight": [
+            "meter"
+          ]
+        },
+        {
+          "text": "Not quite half, because every K and V block is still read once. That N times d term is what sparsity can't remove.",
+          "spotlight": [
+            "k",
+            "v"
+          ]
+        },
+        {
+          "text": "The output is exactly attention with this mask, and only an approximation of dense attention.",
+          "spotlight": [
+            "o"
+          ]
+        }
+      ],
+      "commands": [
+        {
+          "op": "faRun",
+          "args": {
+            "until": "end"
+          }
+        }
+      ],
+      "hold_ms": 1100
+    },
+    {
+      "id": "results",
+      "title": "The results",
+      "text": "FlashAttention trained BERT-large 15 percent faster than the MLPerf 1.1 record, and GPT-2 up to 3 times faster than HuggingFace. Its memory grows linearly with sequence length, which gave the first Transformers to beat chance on Path-X, at 16 thousand tokens. Block-sparse FlashAttention, 2 to 4 times faster still, reached Path-256 at 64 thousand tokens.",
+      "cues": [
+        {
+          "text": "FlashAttention trained BERT-large 15 percent faster than the MLPerf 1.1 record, and GPT-2 up to 3 times faster than HuggingFace.",
+          "spotlight": [
+            "gpu"
+          ]
+        },
+        {
+          "text": "Its memory grows linearly with sequence length, which gave the first Transformers to beat chance on Path-X, at 16 thousand tokens.",
+          "spotlight": [
+            "meter"
+          ]
+        },
+        {
+          "text": "Block-sparse FlashAttention, 2 to 4 times faster still, reached Path-256 at 64 thousand tokens.",
+          "spotlight": [
+            "scores"
+          ]
+        }
+      ],
+      "commands": [],
+      "hold_ms": 1300,
+      "emphasis": true
+    }
+  ],
+  "affordances": []
+}

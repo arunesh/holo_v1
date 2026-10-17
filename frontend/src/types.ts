@@ -42,6 +42,7 @@ export type Pod =
   | TransformerPod
   | import('./lessons/declarative-attention/types').DeclarativeAttentionPod
   | import('./lessons/paged-attention/types').PagedAttentionPod
+  | import('./lessons/flash-attention/types').FlashAttentionPod
 
 export interface PodSummary {
   id: string

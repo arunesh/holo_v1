@@ -24,6 +24,11 @@ pass, or showing activations down to the decimal.
   (reserved slots, internal and external fragmentation), then serve the same requests with
   paged blocks, block tables, copy-on-write sharing and preemption to CPU. See
   [`docs/paged-attention.md`](docs/paged-attention.md).
+- **FlashAttention**: a counted-IO attention kernel for the
+  [FlashAttention paper](https://arxiv.org/abs/2205.14135). Watch standard attention write the
+  N × N score matrix to HBM and read it back, then compute the same output tile by tile in SRAM
+  (QᵢKⱼᵀ, online softmax with rescaling, P̃Vⱼ), and skip whole tiles with block-sparse
+  FlashAttention. See [`docs/flash-attention.md`](docs/flash-attention.md).
 
 New pods can be generated from a YouTube explainer URL (see [Generating pods](#generating-pods)).
 
@@ -104,7 +109,7 @@ All configuration comes from `.env` in the repo root (see [`.env.example`](.env.
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | yes | AI tutor and pod generation. Without it, guided playback still works but the GPT-2 tutor only handles simple keyword commands and the Declarative Attention and PagedAttention tutors say they're offline. |
+| `ANTHROPIC_API_KEY` | yes | AI tutor and pod generation. Without it, guided playback still works but the GPT-2 tutor only handles simple keyword commands and the Declarative Attention, PagedAttention and FlashAttention tutors say they're offline. |
 | `ELEVENLABS_API_KEY` | no | ElevenLabs TTS/STT. Falls back to Web Speech if unset or out of quota. |
 | `ELEVENLABS_VOICE_ID` | no | ElevenLabs voice to use |
 | `HOLODECK_CLAUDE_MODEL` | no | Model used by the tutor |
@@ -166,7 +171,7 @@ python3 scripts/fetch_transcript.py "https://youtu.be/wjZofJX0v4M" \
 cd backend && .venv/bin/python -m pytest tests/ -q
 
 # frontend (lesson simulations + playback)
-cd frontend && npm run test:da && npm run test:pa
+cd frontend && npm run test:da && npm run test:pa && npm run test:fa
 ```
 
 ## Deploying

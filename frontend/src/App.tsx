@@ -4,10 +4,12 @@ import type { SessionUser } from './auth/session'
 import type { Pod, PodSummary, TransformerPod } from './types'
 import type { DeclarativeAttentionPod } from './lessons/declarative-attention/types'
 import type { PagedAttentionPod } from './lessons/paged-attention/types'
+import type { FlashAttentionPod } from './lessons/flash-attention/types'
 import DeclarativeAttentionLesson from './lessons/declarative-attention/DeclarativeAttentionLesson'
 
 const TransformerApp = lazy(() => import('./TransformerApp'))
 const PagedAttentionLesson = lazy(() => import('./lessons/paged-attention/PagedAttentionLesson'))
+const FlashAttentionLesson = lazy(() => import('./lessons/flash-attention/FlashAttentionLesson'))
 interface AppProps { user: SessionUser; onSignOut: () => void }
 
 export default function App(props: AppProps) {
@@ -44,6 +46,9 @@ export default function App(props: AppProps) {
     catalogue={catalogue} onSelect={selectLesson} onSignOut={props.onSignOut} />
   if (lesson.scene.type === 'paged-kv') return <Suspense fallback={<p role="status">Opening the lesson…</p>}>
     <PagedAttentionLesson key={lesson.id} pod={lesson as PagedAttentionPod}
+      catalogue={catalogue} onSelect={selectLesson} onSignOut={props.onSignOut} /></Suspense>
+  if (lesson.scene.type === 'flash-tiles') return <Suspense fallback={<p role="status">Opening the lesson…</p>}>
+    <FlashAttentionLesson key={lesson.id} pod={lesson as FlashAttentionPod}
       catalogue={catalogue} onSelect={selectLesson} onSignOut={props.onSignOut} /></Suspense>
   return <Suspense fallback={<p role="status">Opening the transformer…</p>}><TransformerApp key={lesson.id} {...props}
     lesson={lesson as TransformerPod} catalogue={catalogue} onSelect={selectLesson} /></Suspense>

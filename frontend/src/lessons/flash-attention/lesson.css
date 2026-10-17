@@ -1,0 +1,94 @@
+/* Shares the DA lesson shell (da-* classes); only kernel-specific pieces live here. */
+.fa-svg-num {
+  font:
+    7.5px 'IBM Plex Mono',
+    monospace;
+  fill: #05060a;
+}
+.fa-glow {
+  animation: fa-glow 0.8s ease-in-out infinite alternate;
+}
+@keyframes fa-glow {
+  from {
+    stroke-opacity: 0.5;
+  }
+  to {
+    stroke-opacity: 1;
+  }
+}
+.fa-boot .fa-inputs {
+  animation: fa-arrive 1.2s ease-out;
+}
+@keyframes fa-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.fa-bars {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.fa-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 9.5em) minmax(0, 1fr) 3.6em;
+  align-items: center;
+  gap: 8px;
+  font:
+    11px 'IBM Plex Mono',
+    monospace;
+  opacity: 0.7;
+}
+.fa-bar-current {
+  opacity: 1;
+}
+.fa-bar b {
+  text-align: right;
+  font-weight: 500;
+}
+.fa-bar-track {
+  position: relative;
+  height: 10px;
+}
+.fa-bar-total,
+.fa-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+}
+.fa-bar-total {
+  border: 1px solid;
+}
+.fa-bar-fill {
+  transition: width 0.2s;
+}
+.fa-scale {
+  width: 100%;
+  border-collapse: collapse;
+  font:
+    10px 'IBM Plex Mono',
+    monospace;
+}
+.fa-scale th,
+.fa-scale td {
+  padding: 3px 2px;
+  white-space: nowrap;
+  text-align: right;
+  border-bottom: 1px solid var(--line);
+}
+.fa-scale th:first-child,
+.fa-scale td:first-child {
+  text-align: left;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fa-glow,
+  .fa-boot .fa-inputs {
+    animation: none;
+  }
+  .fa-bar-fill {
+    transition: none;
+  }
+}

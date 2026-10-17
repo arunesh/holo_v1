@@ -20,7 +20,7 @@ const BOARD_HALF_HEIGHT = (441 - 37) / 120
 const OVERVIEW_AZIMUTH = -0.28
 const OVERVIEW_ELEVATION = 0.2
 
-function around(target: Vec3, distance: number, azimuth: number, elevation: number): CameraPreset {
+export function around(target: Vec3, distance: number, azimuth: number, elevation: number): CameraPreset {
   return {
     target,
     position: [
