@@ -96,6 +96,7 @@ export default function Login({ onSignIn }: { onSignIn: (u: SessionUser) => void
           {id:'gpt2',label:'LIVE MODEL',title:'Step into the Transformer',description:'Ride a GPT-2 forward pass — attention heads, MLPs, and next-token predictions in real space.',meta:['GPT-2 SMALL','12 LAYERS','124M PARAMS']},
           {id:'declarative-attention',label:'INTERACTIVE LESSON',title:'Declarative Attention',description:'Read less KV. Move no KV. Step inside a GPU, predict the next read, and discover what stays resident.',meta:['SIMULATED','4 CHUNKS','KV READS']},
           {id:'paged-attention',label:'INTERACTIVE LESSON',title:'PagedAttention',description:'Stop reserving, start paging. See where KV cache memory goes, and how vLLM packs it into blocks.',meta:['SIMULATED','VLLM','KV BLOCKS']},
+          {id:'flash-attention',label:'INTERACTIVE LESSON',title:'FlashAttention',description:'Keep the N×N scores on chip. Watch tiled matmuls stream through SRAM, and block-sparse attention skip whole tiles.',meta:['SIMULATED','IO-AWARE','SRAM TILES']},
         ].map(lesson =>
         <button
           key={lesson.id}
